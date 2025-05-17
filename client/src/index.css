@@ -1,8 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
   --background: 0 0% 100%;
@@ -15,15 +15,15 @@
   --card-foreground: 20 14.3% 4.1%;
   --border: 20 5.9% 90%;
   --input: 20 5.9% 90%;
-  --primary: 168 76% 48%; /* HitchIt primary teal/turquoise */
+  --primary: 174 77% 43%; /* #17C3B2 - HitchIt primary teal */
   --primary-foreground: 0 0% 100%;
-  --secondary: 45 100% 60%; /* HitchIt secondary yellow */
+  --secondary: 44 96% 97%; /* #FEF9EF - HitchIt secondary off-white */
   --secondary-foreground: 24 9.8% 10%;
-  --accent: 60 4.8% 95.9%;
-  --accent-foreground: 24 9.8% 10%;
+  --accent: 199 64% 38%; /* #227C9D - HitchIt accent blue */
+  --accent-foreground: 0 0% 100%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 60 9.1% 97.8%;
-  --ring: 20 14.3% 4.1%;
+  --ring: 174 77% 43%;
   --radius: 0.5rem;
 }
 
@@ -38,15 +38,15 @@
   --card-foreground: 0 0% 98%;
   --border: 240 3.7% 15.9%;
   --input: 240 3.7% 15.9%;
-  --primary: 168 76% 48%;
+  --primary: 174 77% 43%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 45 100% 60%;
+  --secondary: 44 96% 97%;
   --secondary-foreground: 0 0% 98%;
-  --accent: 240 3.7% 15.9%;
-  --accent-foreground: 0 0% 98%;
+  --accent: 199 64% 38%;
+  --accent-foreground: 0 0% 100%;
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
-  --ring: 240 4.9% 83.9%;
+  --ring: 174 77% 43%;
 }
 
 @layer base {

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Switch, Route } from "wouter";
 import Welcome from "@/pages/Welcome";
 import Home from "@/pages/Home";
+import Auth from "@/pages/Auth";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
@@ -13,9 +14,11 @@ function App() {
     const hasSeenOnboarding = localStorage.getItem("hasSeenOnboarding");
     
     // Simulate splash screen delay
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setInitializing(false);
     }, 2000);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   if (initializing) {
@@ -27,6 +30,7 @@ function App() {
       <Switch>
         <Route path="/" component={Welcome} />
         <Route path="/home" component={Home} />
+        <Route path="/auth" component={Auth} />
         <Route component={NotFound} />
       </Switch>
     </TooltipProvider>
