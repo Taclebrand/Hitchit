@@ -11,14 +11,24 @@ const Welcome = () => {
   useEffect(() => {
     // Check if user has completed onboarding before
     const onboardingCompleted = localStorage.getItem("hasSeenOnboarding");
+    const isAuthenticated = localStorage.getItem("isAuthenticated");
+    
     if (onboardingCompleted === "true") {
       setHasSeenOnboarding(true);
-      // Skip to main app if onboarding has been completed
-      setTimeout(() => {
-        setLocation("/home");
-      }, 2000);
+      
+      // Skip to main app if onboarding has been completed and user is authenticated
+      if (isAuthenticated === "true") {
+        setTimeout(() => {
+          setLocation("/home");
+        }, 2000);
+      } else {
+        // Skip to auth if onboarding is done but user is not authenticated
+        setTimeout(() => {
+          setLocation("/auth");
+        }, 2000);
+      }
     } else {
-      // Hide splash screen after 2 seconds
+      // Hide splash screen after 2 seconds to show onboarding
       setTimeout(() => {
         setShowSplash(false);
       }, 2000);
@@ -28,12 +38,14 @@ const Welcome = () => {
   const handleOnboardingComplete = () => {
     localStorage.setItem("hasSeenOnboarding", "true");
     setHasSeenOnboarding(true);
-    setLocation("/home");
+    // Send to auth after onboarding is complete
+    setLocation("/auth");
   };
 
   const handleSkip = () => {
     localStorage.setItem("hasSeenOnboarding", "true");
-    setLocation("/home");
+    // Send to auth after skipping onboarding
+    setLocation("/auth");
   };
 
   if (showSplash) {

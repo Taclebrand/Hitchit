@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import MainApp from "@/components/MainApp";
 import RideConfirmationModal from "@/components/RideConfirmationModal";
@@ -8,6 +8,14 @@ const Home = () => {
   const [showRideConfirmation, setShowRideConfirmation] = useState(false);
   const [showPackageConfirmation, setShowPackageConfirmation] = useState(false);
   const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    // Check if user is authenticated, redirect to auth if not
+    const isAuthenticated = localStorage.getItem("isAuthenticated");
+    if (!isAuthenticated) {
+      setLocation("/auth");
+    }
+  }, [setLocation]);
 
   const handleBookRide = () => {
     setShowRideConfirmation(true);
