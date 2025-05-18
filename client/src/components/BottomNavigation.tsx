@@ -29,7 +29,7 @@ const BottomNavigation: React.FC = () => {
           icon={<HistoryIcon width={24} height={24} />}
           label="History"
           to="/history"
-          active={isActive('/history')}
+          active={isActive('/history') || location.startsWith('/ride-details')}
         />
         <NavItem 
           icon={<UserIcon width={24} height={24} />}
