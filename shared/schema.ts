@@ -1,19 +1,21 @@
 import { pgTable, text, serial, integer, decimal, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations } from "drizzle-orm";
 
-// Users table
+/****************************
+ * Schema for HitchIt App
+ ****************************/
+
+// Users Table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   fullName: text("full_name").notNull(),
-  email: text("email").notNull(),
+  email: text("email").notNull().unique(),
   phone: text("phone").notNull(),
   avatar: text("avatar"),
   isDriver: boolean("is_driver").default(false).notNull(),
-  isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -25,10 +27,9 @@ export const insertUserSchema = createInsertSchema(users).pick({
   phone: true,
   avatar: true,
   isDriver: true,
-  isAdmin: true,
 });
 
-// Driver vehicles
+// Vehicles Table
 export const vehicles = pgTable("vehicles", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
@@ -51,7 +52,7 @@ export const insertVehicleSchema = createInsertSchema(vehicles).pick({
   seats: true,
 });
 
-// Trips posted by drivers
+// Trips Table
 export const trips = pgTable("trips", {
   id: serial("id").primaryKey(),
   driverId: integer("driver_id").references(() => users.id).notNull(),
@@ -67,21 +68,9 @@ export const trips = pgTable("trips", {
   departureDate: timestamp("departure_date").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   availableSeats: integer("available_seats").notNull(),
-  allowPackages: boolean("allow_packages").default(true).notNull(),
   status: text("status").default("active").notNull(), // active, completed, cancelled
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
-
-export const tripRelations = relations(trips, ({ one }) => ({
-  driver: one(users, {
-    fields: [trips.driverId],
-    references: [users.id],
-  }),
-  vehicle: one(vehicles, {
-    fields: [trips.vehicleId],
-    references: [vehicles.id],
-  }),
-}));
 
 export const insertTripSchema = createInsertSchema(trips).pick({
   driverId: true,
@@ -97,10 +86,9 @@ export const insertTripSchema = createInsertSchema(trips).pick({
   departureDate: true,
   price: true,
   availableSeats: true,
-  allowPackages: true,
 });
 
-// Ride bookings
+// Bookings Table
 export const bookings = pgTable("bookings", {
   id: serial("id").primaryKey(),
   tripId: integer("trip_id").references(() => trips.id).notNull(),
@@ -114,20 +102,8 @@ export const bookings = pgTable("bookings", {
   seats: integer("seats").default(1).notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   status: text("status").default("pending").notNull(), // pending, approved, rejected, completed, cancelled
-  message: text("message"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
-
-export const bookingRelations = relations(bookings, ({ one }) => ({
-  trip: one(trips, {
-    fields: [bookings.tripId],
-    references: [trips.id],
-  }),
-  rider: one(users, {
-    fields: [bookings.riderId],
-    references: [users.id],
-  }),
-}));
 
 export const insertBookingSchema = createInsertSchema(bookings).pick({
   tripId: true,
@@ -140,58 +116,9 @@ export const insertBookingSchema = createInsertSchema(bookings).pick({
   dropoffLng: true,
   seats: true,
   price: true,
-  message: true,
 });
 
-// Package shipments
-export const packages = pgTable("packages", {
-  id: serial("id").primaryKey(),
-  tripId: integer("trip_id").references(() => trips.id).notNull(),
-  senderId: integer("sender_id").references(() => users.id).notNull(),
-  pickupAddress: text("pickup_address").notNull(),
-  pickupLat: decimal("pickup_lat", { precision: 10, scale: 7 }).notNull(),
-  pickupLng: decimal("pickup_lng", { precision: 10, scale: 7 }).notNull(),
-  deliveryAddress: text("delivery_address").notNull(),
-  deliveryLat: decimal("delivery_lat", { precision: 10, scale: 7 }).notNull(),
-  deliveryLng: decimal("delivery_lng", { precision: 10, scale: 7 }).notNull(),
-  size: text("size").notNull(), // small, medium, large
-  weight: decimal("weight", { precision: 5, scale: 2 }).notNull(), // in kg
-  description: text("description"),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  trackingNumber: text("tracking_number").notNull(),
-  status: text("status").default("pending").notNull(), // pending, approved, rejected, in_transit, delivered, cancelled
-  message: text("message"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const packageRelations = relations(packages, ({ one }) => ({
-  trip: one(trips, {
-    fields: [packages.tripId],
-    references: [trips.id],
-  }),
-  sender: one(users, {
-    fields: [packages.senderId],
-    references: [users.id],
-  }),
-}));
-
-export const insertPackageSchema = createInsertSchema(packages).pick({
-  tripId: true,
-  senderId: true,
-  pickupAddress: true,
-  pickupLat: true,
-  pickupLng: true,
-  deliveryAddress: true,
-  deliveryLat: true,
-  deliveryLng: true,
-  size: true,
-  weight: true,
-  description: true,
-  price: true,
-  message: true,
-});
-
-// Export types
+// Export types for use in the application
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
@@ -203,25 +130,6 @@ export type InsertTrip = z.infer<typeof insertTripSchema>;
 
 export type Booking = typeof bookings.$inferSelect;
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
-
-export type Package = typeof packages.$inferSelect;
-export type InsertPackage = z.infer<typeof insertPackageSchema>;
-  userId: integer("user_id").references(() => users.id).notNull().unique(),
-  licenseNumber: text("license_number").notNull(),
-  licenseImage: text("license_image").notNull(),
-  insuranceNumber: text("insurance_number").notNull(),
-  insuranceImage: text("insurance_image").notNull(),
-  registrationNumber: text("registration_number").notNull(),
-  registrationImage: text("registration_image").notNull(),
-  vehicleMake: text("vehicle_make").notNull(),
-  vehicleModel: text("vehicle_model").notNull(),
-  vehicleYear: integer("vehicle_year").notNull(),
-  vehicleColor: text("vehicle_color").notNull(),
-  vehicleMileage: integer("vehicle_mileage"),
-  isApproved: boolean("is_approved").default(false),
-  approvalDate: timestamp("approval_date"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
 
 export const driverRelations = relations(drivers, ({ one, many }) => ({
   user: one(users, {
