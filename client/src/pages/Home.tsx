@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import MainApp from "@/components/MainApp";
+import AppLayout from "@/components/AppLayout";
 import RideConfirmationModal from "@/components/RideConfirmationModal";
 import PackageConfirmationModal from "@/components/PackageConfirmationModal";
 
@@ -26,7 +27,7 @@ const Home = () => {
   };
 
   return (
-    <>
+    <AppLayout>
       <MainApp 
         onBookRide={handleBookRide} 
         onSendPackage={handleSendPackage} 
@@ -43,7 +44,7 @@ const Home = () => {
           onClose={() => setShowPackageConfirmation(false)} 
         />
       )}
-    </>
+    </AppLayout>
   );
 };
 
