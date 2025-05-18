@@ -2,898 +2,469 @@ import express, { type Request, Response, NextFunction } from "express";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import { 
   insertUserSchema, 
-  insertDriverSchema,
   insertTripSchema,
-  insertLocationSchema,
-  insertVehicleTypeSchema,
+  insertVehicleSchema,
   insertBookingSchema,
-  insertPackageSchema,
-  insertReviewSchema,
-  insertNotificationSchema
+  users
 } from "@shared/schema";
 import { z } from "zod";
-import { nanoid } from "nanoid";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
 
-  // Seed the database with initial data
-  await seedDatabase();
+  app.use((req, _res, next) => {
+    // Add basic request logging
+    console.log(`${req.method} ${req.url}`);
+    next();
+  });
 
-  // Authentication middleware
+  // Error handler
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    console.error("Error:", err);
+    return res.status(500).json({ message: "An unexpected error occurred" });
+  });
+
+  // User session authentication middleware
   const authenticate = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const userId = req.headers["user-id"];
-      
-      if (!userId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      
-      const user = await storage.getUser(Number(userId));
-      
-      if (!user) {
-        return res.status(401).json({ message: "Invalid user" });
-      }
-      
-      req.user = user;
-      next();
-    } catch (error) {
-      res.status(500).json({ message: "Authentication error" });
+    // This is a simple authentication check using session data
+    // In a real app, you'd want to use a proper auth system
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
+    next();
   };
 
-  // Users API
+  // Register a new user
   apiRouter.post("/users/register", async (req: Request, res: Response) => {
     try {
       const userData = insertUserSchema.parse(req.body);
-      const user = await storage.createUser(userData);
-      res.status(201).json({ user });
+      
+      // Check if user with email already exists
+      const existingUser = await storage.getUserByUsername(userData.username);
+      if (existingUser) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+      
+      const newUser = await storage.createUser(userData);
+      
+      // Don't send back the password
+      const { password, ...userWithoutPassword } = newUser;
+      
+      return res.status(201).json(userWithoutPassword);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({ errors: error.errors });
-      } else {
-        res.status(500).json({ message: "Error creating user" });
+        return res.status(400).json({ message: "Invalid request body", errors: error.errors });
       }
+      return res.status(500).json({ message: "Failed to register user" });
     }
   });
 
+  // User login
   apiRouter.post("/users/login", async (req: Request, res: Response) => {
     try {
       const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+      
       const user = await storage.getUserByUsername(username);
       
       if (!user || user.password !== password) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
-      res.json({ user });
+      // In a real app, you would use a proper session management and not send the password back
+      const { password: _, ...userWithoutPassword } = user;
+      
+      // Set user in session
+      req.user = user;
+      
+      return res.status(200).json(userWithoutPassword);
     } catch (error) {
-      res.status(500).json({ message: "Error logging in" });
+      return res.status(500).json({ message: "Failed to log in" });
     }
   });
 
+  // Get a user by ID
   apiRouter.get("/users/:id", authenticate, async (req: Request, res: Response) => {
     try {
-      const userId = Number(req.params.id);
+      const userId = parseInt(req.params.id);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
       const user = await storage.getUser(userId);
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Don't return password in the response
+      // Don't send back the password
       const { password, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
+      
+      // If user is a driver, include their vehicles
+      if (user.isDriver) {
+        const vehicles = await storage.getVehiclesByUserId(userId);
+        return res.status(200).json({ ...userWithoutPassword, vehicles });
+      }
+      
+      return res.status(200).json(userWithoutPassword);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching user" });
+      return res.status(500).json({ message: "Failed to get user" });
     }
   });
 
-  // Driver API
-  apiRouter.post("/drivers", authenticate, async (req: Request, res: Response) => {
+  // Register a vehicle
+  apiRouter.post("/vehicles", authenticate, async (req: Request, res: Response) => {
     try {
-      const driverData = insertDriverSchema.parse(req.body);
-      
-      // Check if user already has a driver profile
-      const existingDriver = await storage.getDriverByUserId(driverData.userId);
-      
-      if (existingDriver) {
-        return res.status(400).json({ message: "Driver profile already exists" });
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
       }
       
-      // Create driver profile
-      const driver = await storage.createDriver(driverData);
-      
-      // Update user role to driver
-      await storage.updateUserRole(driverData.userId, "driver");
-      
-      res.status(201).json({ driver });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ errors: error.errors });
-      } else {
-        res.status(500).json({ message: "Error creating driver profile" });
-      }
-    }
-  });
-
-  apiRouter.get("/drivers/:userId", authenticate, async (req: Request, res: Response) => {
-    try {
-      const userId = Number(req.params.userId);
-      const driver = await storage.getDriverByUserId(userId);
-      
-      if (!driver) {
-        return res.status(404).json({ message: "Driver profile not found" });
-      }
-      
-      res.json(driver);
-    } catch (error) {
-      res.status(500).json({ message: "Error fetching driver profile" });
-    }
-  });
-
-  // Admin-only endpoint to approve drivers
-  apiRouter.patch("/drivers/:id/approve", authenticate, async (req: Request, res: Response) => {
-    try {
-      // Check if the user is an admin
-      if (req.user?.userRole !== 'admin') {
-        return res.status(403).json({ message: "Only admins can approve drivers" });
-      }
-      
-      const driverId = Number(req.params.id);
-      const { isApproved } = req.body;
-      
-      if (typeof isApproved !== 'boolean') {
-        return res.status(400).json({ message: "isApproved must be a boolean" });
-      }
-      
-      const driver = await storage.approveDriver(driverId, isApproved);
-      
-      if (!driver) {
-        return res.status(404).json({ message: "Driver not found" });
-      }
-      
-      // Send notification to driver
-      await storage.createNotification({
-        userId: driver.userId,
-        title: isApproved ? "Driver Approved" : "Driver Application Rejected",
-        message: isApproved 
-          ? "Your driver application has been approved! You can now post trips." 
-          : "Your driver application has been rejected. Please contact support for more information.",
-        type: "driver_approval"
+      // Set the user ID to the current user
+      const vehicleData = insertVehicleSchema.parse({
+        ...req.body,
+        userId: req.user.id
       });
       
-      res.json(driver);
+      // Set user as a driver if not already
+      if (!req.user.isDriver) {
+        await storage.updateUser(req.user.id, { isDriver: true });
+      }
+      
+      const newVehicle = await storage.createVehicle(vehicleData);
+      
+      return res.status(201).json(newVehicle);
     } catch (error) {
-      res.status(500).json({ message: "Error updating driver approval status" });
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid request body", errors: error.errors });
+      }
+      return res.status(500).json({ message: "Failed to register vehicle" });
     }
   });
 
-  // Trip API
+  // Get vehicles by user ID
+  apiRouter.get("/vehicles/user/:userId", authenticate, async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const vehicles = await storage.getVehiclesByUserId(userId);
+      
+      return res.status(200).json(vehicles);
+    } catch (error) {
+      return res.status(500).json({ message: "Failed to get vehicles" });
+    }
+  });
+
+  // Create a new trip
   apiRouter.post("/trips", authenticate, async (req: Request, res: Response) => {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      // Verify that the user is an approved driver
-      const driver = await storage.getDriverByUserId(req.user.id);
-      
-      if (!driver) {
-        return res.status(403).json({ message: "You must be a driver to post trips" });
+        return res.status(401).json({ message: "Unauthorized" });
       }
       
-      if (!driver.isApproved) {
-        return res.status(403).json({ message: "Your driver account must be approved to post trips" });
-      }
-      
+      // Set the driver ID to the current user
       const tripData = insertTripSchema.parse({
         ...req.body,
-        driverId: driver.id
+        driverId: req.user.id
       });
       
-      const trip = await storage.createTrip(tripData);
-      res.status(201).json({ trip });
+      // Ensure user is a driver
+      if (!req.user.isDriver) {
+        return res.status(403).json({ message: "User is not registered as a driver" });
+      }
+      
+      // Ensure vehicle belongs to the user
+      const vehicle = await storage.getVehicle(tripData.vehicleId);
+      if (!vehicle || vehicle.userId !== req.user.id) {
+        return res.status(403).json({ message: "Vehicle does not belong to the user" });
+      }
+      
+      const newTrip = await storage.createTrip(tripData);
+      
+      return res.status(201).json(newTrip);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({ errors: error.errors });
-      } else {
-        res.status(500).json({ message: "Error creating trip" });
+        return res.status(400).json({ message: "Invalid request body", errors: error.errors });
       }
+      return res.status(500).json({ message: "Failed to create trip" });
     }
   });
 
+  // Get all active trips
   apiRouter.get("/trips", async (req: Request, res: Response) => {
     try {
-      let trips;
+      const trips = await storage.getActiveTrips();
       
-      if (req.query.driverId) {
-        // Get trips by driver
-        trips = await storage.getTripsByDriverId(Number(req.query.driverId));
-      } else if (req.query.departureCity && req.query.destinationCity) {
-        // Get trips by cities
-        trips = await storage.getTripsByCities(
-          req.query.departureCity as string,
-          req.query.destinationCity as string
-        );
-      } else {
-        // Get all active trips
-        trips = await storage.getActiveTrips();
-      }
-      
-      res.json(trips);
+      return res.status(200).json(trips);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching trips" });
+      return res.status(500).json({ message: "Failed to get trips" });
     }
   });
 
+  // Get a trip by ID
   apiRouter.get("/trips/:id", async (req: Request, res: Response) => {
     try {
-      const tripId = Number(req.params.id);
+      const tripId = parseInt(req.params.id);
+      
+      if (isNaN(tripId)) {
+        return res.status(400).json({ message: "Invalid trip ID" });
+      }
+      
       const trip = await storage.getTrip(tripId);
       
       if (!trip) {
         return res.status(404).json({ message: "Trip not found" });
       }
       
-      res.json(trip);
+      return res.status(200).json(trip);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching trip" });
+      return res.status(500).json({ message: "Failed to get trip" });
     }
   });
 
+  // Update trip status
   apiRouter.patch("/trips/:id/status", authenticate, async (req: Request, res: Response) => {
     try {
-      const tripId = Number(req.params.id);
+      const tripId = parseInt(req.params.id);
+      
+      if (isNaN(tripId)) {
+        return res.status(400).json({ message: "Invalid trip ID" });
+      }
+      
       const { status } = req.body;
       
-      if (!status || !['active', 'completed', 'cancelled'].includes(status)) {
+      if (!status || !["active", "completed", "cancelled"].includes(status)) {
         return res.status(400).json({ message: "Invalid status" });
       }
       
-      // Get the trip
+      // Ensure trip belongs to the user
       const trip = await storage.getTrip(tripId);
-      
       if (!trip) {
         return res.status(404).json({ message: "Trip not found" });
       }
       
-      // Verify the user is the driver of this trip
-      const driver = await storage.getDriverByUserId(req.user.id);
-      if (!driver || driver.id !== trip.driverId) {
-        return res.status(403).json({ message: "Only the trip driver can update status" });
+      if (req.user && trip.driverId !== req.user.id) {
+        return res.status(403).json({ message: "Trip does not belong to the user" });
       }
       
       const updatedTrip = await storage.updateTripStatus(tripId, status);
       
-      // If trip is completed or cancelled, notify passengers with bookings
-      if (status === 'completed' || status === 'cancelled') {
-        const bookings = await storage.getBookingsByTripId(tripId);
-        
-        for (const booking of bookings) {
-          if (booking.status === 'approved') {
-            await storage.createNotification({
-              userId: booking.userId,
-              title: status === 'completed' ? "Trip Completed" : "Trip Cancelled",
-              message: status === 'completed' 
-                ? "Your trip has been marked as completed by the driver." 
-                : "Your trip has been cancelled by the driver.",
-              type: "trip_status",
-              relatedId: tripId
-            });
-            
-            // Update booking status too
-            await storage.updateBookingStatus(
-              booking.id, 
-              status === 'completed' ? 'completed' : 'cancelled'
-            );
-          }
-        }
-        
-        // Also handle packages
-        const packages = await storage.getPackagesByTripId(tripId);
-        
-        for (const pkg of packages) {
-          if (['approved', 'in_transit'].includes(pkg.status)) {
-            await storage.createNotification({
-              userId: pkg.userId,
-              title: status === 'completed' ? "Package Delivered" : "Package Delivery Cancelled",
-              message: status === 'completed' 
-                ? "Your package has been marked as delivered by the driver." 
-                : "Your package delivery has been cancelled by the driver.",
-              type: "package_status",
-              relatedId: pkg.id
-            });
-            
-            // Update package status too
-            await storage.updatePackageStatus(
-              pkg.id, 
-              status === 'completed' ? 'delivered' : 'cancelled'
-            );
-          }
-        }
-      }
-      
-      res.json(updatedTrip);
+      return res.status(200).json(updatedTrip);
     } catch (error) {
-      res.status(500).json({ message: "Error updating trip status" });
+      return res.status(500).json({ message: "Failed to update trip status" });
     }
   });
 
-  // Search for matching trips
+  // Search for trips by cities
   apiRouter.post("/trips/search/bookings", async (req: Request, res: Response) => {
     try {
-      const { pickup, dropoff, departureDate, radiusMiles = 10 } = req.body;
+      const { 
+        origin, 
+        destination, 
+        departureDate,
+        radiusMiles = 5 // Default to 5 miles radius
+      } = req.body;
       
-      if (!pickup || !pickup.lat || !pickup.lng || 
-          !dropoff || !dropoff.lat || !dropoff.lng ||
-          !departureDate) {
+      if (!origin || !destination || !departureDate) {
         return res.status(400).json({ 
-          message: "Missing required parameters (pickup, dropoff, departureDate)" 
+          message: "Origin, destination and departureDate are required" 
         });
       }
       
-      const matchingTrips = await storage.findMatchingTripsForBooking(
-        pickup,
-        dropoff,
-        new Date(departureDate),
-        Number(radiusMiles)
-      );
-      
-      res.json(matchingTrips);
-    } catch (error) {
-      res.status(500).json({ message: "Error searching for trips" });
-    }
-  });
-
-  // Search for matching trips for packages
-  apiRouter.post("/trips/search/packages", async (req: Request, res: Response) => {
-    try {
-      const { pickup, delivery, departureDate, radiusMiles = 10 } = req.body;
-      
-      if (!pickup || !pickup.lat || !pickup.lng || 
-          !delivery || !delivery.lat || !delivery.lng ||
-          !departureDate) {
+      if (!origin.lat || !origin.lng || !destination.lat || !destination.lng) {
         return res.status(400).json({ 
-          message: "Missing required parameters (pickup, delivery, departureDate)" 
+          message: "Origin and destination must include lat and lng coordinates" 
         });
       }
       
-      const matchingTrips = await storage.findMatchingTripsForPackage(
-        pickup,
-        delivery,
-        new Date(departureDate),
-        Number(radiusMiles)
+      const parsedDate = new Date(departureDate);
+      if (isNaN(parsedDate.getTime())) {
+        return res.status(400).json({ message: "Invalid departure date" });
+      }
+      
+      const trips = await storage.findMatchingTripsForBooking(
+        origin,
+        destination,
+        parsedDate,
+        radiusMiles
       );
       
-      res.json(matchingTrips);
+      return res.status(200).json(trips);
     } catch (error) {
-      res.status(500).json({ message: "Error searching for trips" });
+      return res.status(500).json({ message: "Failed to search for trips" });
     }
   });
 
-  // Locations API
-  apiRouter.get("/locations", async (req: Request, res: Response) => {
-    try {
-      const userId = req.query.userId ? Number(req.query.userId) : undefined;
-      
-      if (!userId) {
-        return res.status(400).json({ message: "User ID is required" });
-      }
-      
-      const locations = await storage.getLocationsByUserId(userId);
-      res.json(locations);
-    } catch (error) {
-      res.status(500).json({ message: "Error fetching locations" });
-    }
-  });
-
-  apiRouter.post("/locations", authenticate, async (req: Request, res: Response) => {
-    try {
-      const locationData = insertLocationSchema.parse({
-        ...req.body,
-        userId: req.user.id
-      });
-      
-      const location = await storage.createLocation(locationData);
-      res.status(201).json({ location });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ errors: error.errors });
-      } else {
-        res.status(500).json({ message: "Error creating location" });
-      }
-    }
-  });
-
-  // Vehicle Types API
-  apiRouter.get("/vehicle-types", async (_req: Request, res: Response) => {
-    try {
-      const vehicleTypes = await storage.getVehicleTypes();
-      res.json(vehicleTypes);
-    } catch (error) {
-      res.status(500).json({ message: "Error fetching vehicle types" });
-    }
-  });
-
-  // Booking API (ride requests)
+  // Create a booking
   apiRouter.post("/bookings", authenticate, async (req: Request, res: Response) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      // Set the rider ID to the current user
       const bookingData = insertBookingSchema.parse({
         ...req.body,
-        userId: req.user.id
+        riderId: req.user.id
       });
       
-      // Verify the trip exists and is active
+      // Ensure trip exists and has enough available seats
       const trip = await storage.getTrip(bookingData.tripId);
-      
       if (!trip) {
         return res.status(404).json({ message: "Trip not found" });
       }
       
-      if (trip.status !== 'active') {
-        return res.status(400).json({ message: "This trip is no longer active" });
-      }
-      
-      if (trip.availableSeats < bookingData.passengerCount) {
+      if (trip.availableSeats < bookingData.seats) {
         return res.status(400).json({ message: "Not enough available seats" });
       }
       
-      const booking = await storage.createBooking(bookingData);
-      res.status(201).json({ booking });
+      // Create the booking
+      const newBooking = await storage.createBooking(bookingData);
+      
+      // Reduce available seats
+      await storage.updateTripAvailableSeats(
+        trip.id, 
+        trip.availableSeats - bookingData.seats
+      );
+      
+      return res.status(201).json(newBooking);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({ errors: error.errors });
-      } else {
-        res.status(500).json({ message: "Error creating booking" });
+        return res.status(400).json({ message: "Invalid request body", errors: error.errors });
       }
+      return res.status(500).json({ message: "Failed to create booking" });
     }
   });
 
-  apiRouter.get("/bookings", authenticate, async (req: Request, res: Response) => {
+  // Get bookings by rider ID
+  apiRouter.get("/bookings/rider", authenticate, async (req: Request, res: Response) => {
     try {
-      let bookings;
-      
-      if (req.query.tripId) {
-        // Driver requesting bookings for their trip
-        const tripId = Number(req.query.tripId);
-        const trip = await storage.getTrip(tripId);
-        
-        if (!trip) {
-          return res.status(404).json({ message: "Trip not found" });
-        }
-        
-        // Verify the user is the driver of this trip
-        const driver = await storage.getDriverByUserId(req.user.id);
-        if (!driver || driver.id !== trip.driverId) {
-          return res.status(403).json({ message: "Only the trip driver can view these bookings" });
-        }
-        
-        bookings = await storage.getBookingsByTripId(tripId);
-      } else {
-        // User requesting their own bookings
-        bookings = await storage.getBookingsByUserId(req.user.id);
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
       }
       
-      res.json(bookings);
+      const bookings = await storage.getBookingsByRiderId(req.user.id);
+      
+      return res.status(200).json(bookings);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching bookings" });
+      return res.status(500).json({ message: "Failed to get bookings" });
     }
   });
 
+  // Get bookings by trip ID
+  apiRouter.get("/bookings/trip/:tripId", authenticate, async (req: Request, res: Response) => {
+    try {
+      const tripId = parseInt(req.params.tripId);
+      
+      if (isNaN(tripId)) {
+        return res.status(400).json({ message: "Invalid trip ID" });
+      }
+      
+      // Ensure trip belongs to the user
+      const trip = await storage.getTrip(tripId);
+      if (!trip) {
+        return res.status(404).json({ message: "Trip not found" });
+      }
+      
+      if (req.user && trip.driverId !== req.user.id) {
+        return res.status(403).json({ message: "Trip does not belong to the user" });
+      }
+      
+      const bookings = await storage.getBookingsByTripId(tripId);
+      
+      return res.status(200).json(bookings);
+    } catch (error) {
+      return res.status(500).json({ message: "Failed to get bookings" });
+    }
+  });
+
+  // Update booking status
   apiRouter.patch("/bookings/:id/status", authenticate, async (req: Request, res: Response) => {
     try {
-      const bookingId = Number(req.params.id);
+      const bookingId = parseInt(req.params.id);
+      
+      if (isNaN(bookingId)) {
+        return res.status(400).json({ message: "Invalid booking ID" });
+      }
+      
       const { status } = req.body;
       
-      if (!status || !['approved', 'rejected', 'completed', 'cancelled'].includes(status)) {
+      if (!status || !["pending", "approved", "rejected", "completed", "cancelled"].includes(status)) {
         return res.status(400).json({ message: "Invalid status" });
       }
       
       // Get the booking
       const booking = await storage.getBooking(bookingId);
-      
       if (!booking) {
         return res.status(404).json({ message: "Booking not found" });
       }
       
-      // Get the trip for this booking
+      // Get the trip
       const trip = await storage.getTrip(booking.tripId);
-      
-      if (!trip) {
-        return res.status(404).json({ message: "Associated trip not found" });
-      }
-      
-      // Check authorization
-      const isPassenger = req.user.id === booking.userId;
-      const driver = await storage.getDriverByUserId(req.user.id);
-      const isDriver = driver && driver.id === trip.driverId;
-      
-      if (!isPassenger && !isDriver) {
-        return res.status(403).json({ message: "You are not authorized to update this booking" });
-      }
-      
-      // Passenger can only cancel
-      if (isPassenger && status !== 'cancelled') {
-        return res.status(403).json({ message: "Passengers can only cancel bookings" });
-      }
-      
-      // Driver can approve, reject, or complete
-      if (isDriver && status === 'cancelled') {
-        return res.status(403).json({ message: "Drivers cannot cancel bookings, only approve, reject, or complete" });
-      }
-      
-      // If approving, check available seats
-      if (status === 'approved' && trip.availableSeats < booking.passengerCount) {
-        return res.status(400).json({ message: "Not enough available seats" });
-      }
-      
-      // Update the booking status
-      const updatedBooking = await storage.updateBookingStatus(bookingId, status);
-      
-      // If approved, update the trip's available seats
-      if (status === 'approved') {
-        await storage.updateTripAvailableSeats(
-          trip.id, 
-          trip.availableSeats - booking.passengerCount
-        );
-      }
-      
-      // If cancelled and was previously approved, increase available seats
-      if (status === 'cancelled' && booking.status === 'approved') {
-        await storage.updateTripAvailableSeats(
-          trip.id, 
-          trip.availableSeats + booking.passengerCount
-        );
-      }
-      
-      res.json(updatedBooking);
-    } catch (error) {
-      res.status(500).json({ message: "Error updating booking status" });
-    }
-  });
-
-  // Packages API
-  apiRouter.post("/packages", authenticate, async (req: Request, res: Response) => {
-    try {
-      const packageData = insertPackageSchema.parse({
-        ...req.body,
-        userId: req.user.id
-      });
-      
-      // Verify the trip exists, is active, and accepts packages
-      const trip = await storage.getTrip(packageData.tripId);
-      
       if (!trip) {
         return res.status(404).json({ message: "Trip not found" });
       }
       
-      if (trip.status !== 'active') {
-        return res.status(400).json({ message: "This trip is no longer active" });
-      }
-      
-      if (!trip.acceptingPackages) {
-        return res.status(400).json({ message: "This trip does not accept packages" });
-      }
-      
-      // Generate tracking number
-      const trackingNumber = `HITCH${nanoid(8).toUpperCase()}`;
-      const packageWithTracking = { ...packageData, trackingNumber };
-      
-      const pkg = await storage.createPackage(packageWithTracking);
-      res.status(201).json({ package: pkg });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ errors: error.errors });
-      } else {
-        res.status(500).json({ message: "Error creating package" });
-      }
-    }
-  });
-
-  apiRouter.get("/packages", authenticate, async (req: Request, res: Response) => {
-    try {
-      let packages;
-      
-      if (req.query.tripId) {
-        // Driver requesting packages for their trip
-        const tripId = Number(req.query.tripId);
-        const trip = await storage.getTrip(tripId);
+      // If user is the driver of the trip, they can update the status
+      // If user is the rider who made the booking, they can only cancel
+      if (req.user) {
+        const isDriver = trip.driverId === req.user.id;
+        const isRider = booking.riderId === req.user.id;
         
-        if (!trip) {
-          return res.status(404).json({ message: "Trip not found" });
-        }
-        
-        // Verify the user is the driver of this trip
-        const driver = await storage.getDriverByUserId(req.user.id);
-        if (!driver || driver.id !== trip.driverId) {
-          return res.status(403).json({ message: "Only the trip driver can view these packages" });
-        }
-        
-        packages = await storage.getPackagesByTripId(tripId);
-      } else {
-        // User requesting their own packages
-        packages = await storage.getPackagesByUserId(req.user.id);
-      }
-      
-      res.json(packages);
-    } catch (error) {
-      res.status(500).json({ message: "Error fetching packages" });
-    }
-  });
-
-  apiRouter.get("/packages/:id", authenticate, async (req: Request, res: Response) => {
-    try {
-      const packageId = Number(req.params.id);
-      const pkg = await storage.getPackage(packageId);
-      
-      if (!pkg) {
-        return res.status(404).json({ message: "Package not found" });
-      }
-      
-      // Check authorization - package sender or trip driver can view
-      const isSender = req.user.id === pkg.userId;
-      
-      if (!isSender) {
-        const trip = await storage.getTrip(pkg.tripId);
-        if (!trip) {
-          return res.status(404).json({ message: "Associated trip not found" });
-        }
-        
-        const driver = await storage.getDriverByUserId(req.user.id);
-        const isDriver = driver && driver.id === trip.driverId;
-        
-        if (!isDriver) {
-          return res.status(403).json({ message: "You are not authorized to view this package" });
+        if (!isDriver && (!isRider || status !== "cancelled")) {
+          return res.status(403).json({ message: "Unauthorized to update this booking" });
         }
       }
       
-      res.json(pkg);
+      // Handle seat changes based on status change
+      if (booking.status !== status) {
+        if (status === "cancelled" || status === "rejected") {
+          // Add seats back to trip
+          await storage.updateTripAvailableSeats(
+            trip.id,
+            trip.availableSeats + booking.seats
+          );
+        } else if (booking.status === "cancelled" || booking.status === "rejected") {
+          // Reduce available seats if coming from cancelled/rejected status
+          await storage.updateTripAvailableSeats(
+            trip.id,
+            trip.availableSeats - booking.seats
+          );
+        }
+      }
+      
+      const updatedBooking = await storage.updateBookingStatus(bookingId, status);
+      
+      return res.status(200).json(updatedBooking);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching package" });
+      return res.status(500).json({ message: "Failed to update booking status" });
     }
   });
 
-  apiRouter.patch("/packages/:id/status", authenticate, async (req: Request, res: Response) => {
-    try {
-      const packageId = Number(req.params.id);
-      const { status } = req.body;
-      
-      if (!status || !['approved', 'rejected', 'in_transit', 'delivered', 'cancelled'].includes(status)) {
-        return res.status(400).json({ message: "Invalid status" });
-      }
-      
-      // Get the package
-      const pkg = await storage.getPackage(packageId);
-      
-      if (!pkg) {
-        return res.status(404).json({ message: "Package not found" });
-      }
-      
-      // Get the trip for this package
-      const trip = await storage.getTrip(pkg.tripId);
-      
-      if (!trip) {
-        return res.status(404).json({ message: "Associated trip not found" });
-      }
-      
-      // Check authorization
-      const isSender = req.user.id === pkg.userId;
-      const driver = await storage.getDriverByUserId(req.user.id);
-      const isDriver = driver && driver.id === trip.driverId;
-      
-      if (!isSender && !isDriver) {
-        return res.status(403).json({ message: "You are not authorized to update this package" });
-      }
-      
-      // Sender can only cancel
-      if (isSender && status !== 'cancelled') {
-        return res.status(403).json({ message: "Package senders can only cancel packages" });
-      }
-      
-      // Driver can approve, reject, mark as in_transit, or deliver
-      if (isDriver && status === 'cancelled') {
-        return res.status(403).json({ message: "Drivers cannot cancel packages, only approve, reject, mark as in_transit, or deliver" });
-      }
-      
-      // Update the package status
-      const updatedPackage = await storage.updatePackageStatus(packageId, status);
-      res.json(updatedPackage);
-    } catch (error) {
-      res.status(500).json({ message: "Error updating package status" });
-    }
-  });
+  // Add method to update user (to support updating isDriver status)
+  storage.updateUser = async (id: number, data: Partial<{ isDriver: boolean }>) => {
+    const [user] = await db.update(users)
+      .set(data)
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  };
 
-  // Reviews API
-  apiRouter.post("/reviews", authenticate, async (req: Request, res: Response) => {
-    try {
-      const reviewData = insertReviewSchema.parse({
-        ...req.body,
-        fromUserId: req.user.id
-      });
-      
-      const review = await storage.createReview(reviewData);
-      res.status(201).json({ review });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ errors: error.errors });
-      } else {
-        res.status(500).json({ message: "Error creating review" });
-      }
-    }
-  });
-
-  apiRouter.get("/reviews/:userId", async (req: Request, res: Response) => {
-    try {
-      const userId = Number(req.params.userId);
-      const reviews = await storage.getReviewsByUserId(userId);
-      res.json(reviews);
-    } catch (error) {
-      res.status(500).json({ message: "Error fetching reviews" });
-    }
-  });
-
-  // Notifications API
-  apiRouter.get("/notifications", authenticate, async (req: Request, res: Response) => {
-    try {
-      const notifications = await storage.getNotificationsByUserId(req.user.id);
-      res.json(notifications);
-    } catch (error) {
-      res.status(500).json({ message: "Error fetching notifications" });
-    }
-  });
-
-  apiRouter.patch("/notifications/:id/read", authenticate, async (req: Request, res: Response) => {
-    try {
-      const notificationId = Number(req.params.id);
-      const notification = await storage.getNotification(notificationId);
-      
-      if (!notification) {
-        return res.status(404).json({ message: "Notification not found" });
-      }
-      
-      if (notification.userId !== req.user.id) {
-        return res.status(403).json({ message: "You cannot mark other users' notifications as read" });
-      }
-      
-      const updatedNotification = await storage.markNotificationAsRead(notificationId);
-      res.json(updatedNotification);
-    } catch (error) {
-      res.status(500).json({ message: "Error marking notification as read" });
-    }
-  });
-
-  // Prefix all routes with /api
+  // Mount API router
   app.use("/api", apiRouter);
 
+  // Create and return HTTP server
   const httpServer = createServer(app);
   return httpServer;
-}
-
-// Seed initial data
-async function seedDatabase() {
-  // Create default user
-  const userExists = await storage.getUserByUsername("demo");
-  if (!userExists) {
-    await storage.createUser({
-      username: "demo",
-      password: "password123",
-      fullName: "Demo User",
-      email: "demo@hitchit.com",
-      phone: "555-123-4567",
-      avatar: "",
-      userRole: "rider"
-    });
-    
-    // Create admin user
-    await storage.createUser({
-      username: "admin",
-      password: "admin123",
-      fullName: "Admin User",
-      email: "admin@hitchit.com",
-      phone: "555-987-6543",
-      avatar: "",
-      userRole: "admin"
-    });
-    
-    // Create a driver user
-    const driverUser = await storage.createUser({
-      username: "driver",
-      password: "driver123",
-      fullName: "Test Driver",
-      email: "driver@hitchit.com",
-      phone: "555-456-7890",
-      avatar: "",
-      userRole: "driver"
-    });
-    
-    // Create driver profile
-    const driver = await storage.createDriver({
-      userId: driverUser.id,
-      licenseNumber: "DL12345678",
-      licenseImage: "https://via.placeholder.com/300x200.png?text=License+Image",
-      insuranceNumber: "INS87654321",
-      insuranceImage: "https://via.placeholder.com/300x200.png?text=Insurance+Image",
-      registrationNumber: "REG123ABC",
-      registrationImage: "https://via.placeholder.com/300x200.png?text=Registration+Image",
-      vehicleMake: "Toyota",
-      vehicleModel: "Camry",
-      vehicleYear: 2020,
-      vehicleColor: "Silver",
-      vehicleMileage: 25000
-    });
-    
-    // Approve the driver
-    await storage.approveDriver(driver.id, true);
-    
-    // Create vehicle types
-    await storage.createVehicleType({
-      name: "Economy",
-      description: "Affordable rides for everyday use",
-      maxCapacity: 4,
-      icon: "car",
-      active: true
-    });
-    
-    await storage.createVehicleType({
-      name: "Comfort",
-      description: "More spacious cars with extra legroom",
-      maxCapacity: 4,
-      icon: "car-side",
-      active: true
-    });
-    
-    await storage.createVehicleType({
-      name: "Van",
-      description: "Larger vehicles for groups",
-      maxCapacity: 7,
-      icon: "van-passenger",
-      active: true
-    });
-    
-    // Create sample trips
-    // Current date at noon
-    const today = new Date();
-    today.setHours(12, 0, 0, 0);
-    
-    // Tomorrow at noon
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    // Sample trip 1
-    await storage.createTrip({
-      driverId: driver.id,
-      departureCity: "San Francisco",
-      departureAddress: "123 Market St, San Francisco, CA",
-      departureLat: 37.7749,
-      departureLng: -122.4194,
-      destinationCity: "Los Angeles",
-      destinationAddress: "456 Hollywood Blvd, Los Angeles, CA",
-      destinationLat: 34.0522,
-      destinationLng: -118.2437,
-      departureDate: tomorrow,
-      availableSeats: 3,
-      pricePerSeat: 45.00,
-      acceptingPackages: true
-    });
-    
-    // Sample trip 2
-    await storage.createTrip({
-      driverId: driver.id,
-      departureCity: "New York",
-      departureAddress: "789 Broadway, New York, NY",
-      departureLat: 40.7128,
-      departureLng: -74.0060,
-      destinationCity: "Boston",
-      destinationAddress: "101 Main St, Boston, MA",
-      destinationLat: 42.3601,
-      destinationLng: -71.0589,
-      departureDate: tomorrow,
-      availableSeats: 2,
-      pricePerSeat: 35.00,
-      acceptingPackages: true
-    });
-  }
-}
+};
