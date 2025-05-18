@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PackageIcon, CarIcon, TrackingIcon } from "@/lib/icons";
+import CloudBackground from "@/components/CloudBackground";
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -137,7 +138,8 @@ const Onboarding = ({ onComplete, onSkip }: OnboardingProps) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-white z-40">
+    <div className="fixed inset-0 bg-gradient-to-b from-white to-primary/5 z-40 overflow-hidden">
+      <CloudBackground className="opacity-40" />
       <div className="h-full relative">
         {slides.map((slide, index) => (
           <OnboardingSlide
