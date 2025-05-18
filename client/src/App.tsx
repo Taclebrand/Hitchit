@@ -14,6 +14,7 @@ import Profile from "@/pages/Profile";
 import CreateTrip from "@/pages/CreateTrip";
 import SearchTrips from "@/pages/SearchTrips";
 import Trips from "@/pages/Trips";
+import DriverSignup from "@/pages/DriverSignup";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import MobileResponsiveTest from "@/components/MobileResponsiveTest";
@@ -45,6 +46,7 @@ function App() {
         <Route path="/auth" component={Auth} />
         <Route path="/profile-setup" component={ProfileSetup} />
         <Route path="/driver-registration" component={DriverRegistration} />
+        <Route path="/driver-signup" component={DriverSignup} />
         <Route path="/driver-tracking" component={DriverTracking} />
         <Route path="/history" component={RideHistory} />
         <Route path="/ride-details/:id" component={RideDetails} />

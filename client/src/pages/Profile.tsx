@@ -1,13 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { CarIcon, TruckIcon, SettingsIcon, HistoryIcon } from '@/lib/icons';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { CarIcon, TruckIcon, SettingsIcon, HistoryIcon, UserCheck } from '@/lib/icons';
 
 const Profile: React.FC = () => {
   const [, setLocation] = useLocation();
   const [isDriverMode, setIsDriverMode] = useState(false);
+  const [isDriverRegistered, setIsDriverRegistered] = useState(false);
+  
+  useEffect(() => {
+    // Check if user is registered as a driver when component mounts
+    const driverStatus = localStorage.getItem("isDriver") === "true";
+    setIsDriverRegistered(driverStatus);
+    
+    // If they're registered as a driver, they might be in driver mode
+    if (driverStatus) {
+      const activeMode = localStorage.getItem("activeMode") || "rider";
+      setIsDriverMode(activeMode === "driver");
+    }
+  }, []);
   
   // Mock user data - in a real app, this would come from the API or context
   const user = {
@@ -45,12 +59,17 @@ const Profile: React.FC = () => {
   };
   
   const handleDriverModeToggle = () => {
-    setIsDriverMode(!isDriverMode);
-    
-    // If switching to driver mode and not registered as a driver, redirect to registration
-    if (!isDriverMode && !driverStats) {
-      setLocation('/driver-registration');
+    // Check if user is already registered as a driver
+    if (!isDriverMode && !isDriverRegistered) {
+      // If switching to driver mode and not registered as a driver, redirect to driver signup
+      setLocation('/driver-signup');
+      return;
     }
+    
+    // Otherwise toggle the mode and save it
+    const newMode = !isDriverMode;
+    setIsDriverMode(newMode);
+    localStorage.setItem("activeMode", newMode ? "driver" : "rider");
   };
   
   return (
@@ -137,8 +156,33 @@ const Profile: React.FC = () => {
             </Button>
           </div>
           
+          {/* Driver Registration Card (show when not registered) */}
+          {!isDriverRegistered && (
+            <Card className="mb-6">
+              <CardHeader className="pb-3">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3">
+                    <CarIcon width={20} height={20} />
+                  </div>
+                  <h3 className="font-medium">Become a Driver</h3>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <p className="text-sm text-gray-500 mb-4">
+                  Earn extra money by driving passengers or delivering packages in your spare time.
+                </p>
+                <Button 
+                  onClick={() => setLocation('/driver-signup')} 
+                  className="w-full"
+                >
+                  Sign Up as Driver
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Driver Stats (show only in driver mode) */}
-          {isDriverMode && driverStats && (
+          {isDriverMode && isDriverRegistered && driverStats && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
               <h2 className="px-4 py-3 font-medium text-gray-800 bg-gray-50 border-b border-gray-100">
                 Driver Stats
