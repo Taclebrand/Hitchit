@@ -35,16 +35,9 @@ import {
   CheckCircleIcon,
   AlertCircleIcon 
 } from "@/lib/icons";
-import {
-  AnimatedContainer,
-  AnimatedFormField,
-  PopIn,
-  SlideInFromRight,
-  StepTransition,
-  SuccessCheck,
-  AnimatedButton,
-  ErrorShake
-} from "@/lib/animations";
+import { motion, AnimatePresence } from "framer-motion";
+import { AnimatedButton } from "@/components/ui/animated-button";
+import { AnimatedFormField, AnimatedFormSection } from "@/components/ui/animated-form-field";
 
 const vehicleSchema = z.object({
   make: z.string().min(2, "Make is required"),
@@ -407,16 +400,30 @@ const DriverSignup = () => {
 
   return (
     <div className="container px-4 py-8 max-w-lg mx-auto">
-      {step === 'vehicle' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
-              <CarIcon className="mr-2 h-5 w-5" /> Register Your Vehicle
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Form {...vehicleForm}>
-              <form onSubmit={vehicleForm.handleSubmit(onVehicleSubmit)} className="space-y-6">
+      <AnimatePresence mode="wait">
+        {step === 'vehicle' && (
+          <motion.div
+            key="vehicle"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card>
+              <CardHeader>
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.3 }}
+                >
+                  <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
+                    <CarIcon className="mr-2 h-5 w-5" /> Register Your Vehicle
+                  </CardTitle>
+                </motion.div>
+              </CardHeader>
+              <CardContent>
+                <Form {...vehicleForm}>
+                  <form onSubmit={vehicleForm.handleSubmit(onVehicleSubmit)} className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={vehicleForm.control}
