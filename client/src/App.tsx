@@ -3,6 +3,7 @@ import { Switch, Route } from "wouter";
 import Welcome from "@/pages/Welcome";
 import Home from "@/pages/Home";
 import Auth from "@/pages/Auth";
+import ProfileSetup from "@/pages/ProfileSetup";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import MobileResponsiveTest from "@/components/MobileResponsiveTest";
@@ -32,6 +33,7 @@ function App() {
         <Route path="/" component={Welcome} />
         <Route path="/home" component={Home} />
         <Route path="/auth" component={Auth} />
+        <Route path="/profile-setup" component={ProfileSetup} />
         <Route path="/mobile-test" component={MobileResponsiveTest} />
         <Route component={NotFound} />
       </Switch>
