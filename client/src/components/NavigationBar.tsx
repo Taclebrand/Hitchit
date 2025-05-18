@@ -1,8 +1,11 @@
+import { useLocation } from "wouter";
 import { 
-  HomeIcon, 
-  MapPinIcon, 
-  HistoryIcon, 
-  UserIcon 
+  HomeIcon,
+  MapPinIcon,
+  HistoryIcon,
+  UserIcon,
+  CarIcon,
+  SearchIcon
 } from "@/lib/icons";
 
 interface NavigationBarProps {
@@ -10,11 +13,14 @@ interface NavigationBarProps {
 }
 
 const NavigationBar = ({ activeTab }: NavigationBarProps) => {
+  const [, setLocation] = useLocation();
+  
   const navItems = [
-    { id: "home", label: "Home", icon: HomeIcon },
-    { id: "activity", label: "Activity", icon: MapPinIcon },
-    { id: "history", label: "History", icon: HistoryIcon },
-    { id: "profile", label: "Profile", icon: UserIcon }
+    { id: "home", label: "Home", icon: HomeIcon, path: "/home" },
+    { id: "trips", label: "My Trips", icon: CarIcon, path: "/trips" },
+    { id: "search", label: "Find Trips", icon: SearchIcon, path: "/search-trips" },
+    { id: "history", label: "History", icon: HistoryIcon, path: "/history" },
+    { id: "profile", label: "Profile", icon: UserIcon, path: "/profile" }
   ];
 
   return (
@@ -30,6 +36,7 @@ const NavigationBar = ({ activeTab }: NavigationBarProps) => {
               className={`flex flex-col items-center p-2 ${
                 isActive ? "text-primary" : "text-neutral-400"
               }`}
+              onClick={() => setLocation(item.path)}
             >
               <Icon className="w-6 h-6" />
               <span className="text-xs mt-1">{item.label}</span>
