@@ -138,7 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.patch("/drivers/:id/approve", authenticate, async (req: Request, res: Response) => {
     try {
       // Check if the user is an admin
-      if (req.user.userRole !== 'admin') {
+      if (req.user?.userRole !== 'admin') {
         return res.status(403).json({ message: "Only admins can approve drivers" });
       }
       
@@ -174,6 +174,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Trip API
   apiRouter.post("/trips", authenticate, async (req: Request, res: Response) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
       // Verify that the user is an approved driver
       const driver = await storage.getDriverByUserId(req.user.id);
       
