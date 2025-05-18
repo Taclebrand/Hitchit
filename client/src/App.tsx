@@ -5,6 +5,7 @@ import Home from "@/pages/Home";
 import Auth from "@/pages/Auth";
 import ProfileSetup from "@/pages/ProfileSetup";
 import DriverRegistration from "@/pages/DriverRegistration";
+import DriverTracking from "@/pages/DriverTracking";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import MobileResponsiveTest from "@/components/MobileResponsiveTest";
@@ -36,6 +37,7 @@ function App() {
         <Route path="/auth" component={Auth} />
         <Route path="/profile-setup" component={ProfileSetup} />
         <Route path="/driver-registration" component={DriverRegistration} />
+        <Route path="/driver-tracking" component={DriverTracking} />
         <Route path="/mobile-test" component={MobileResponsiveTest} />
         <Route component={NotFound} />
       </Switch>

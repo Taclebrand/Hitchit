@@ -52,7 +52,7 @@ interface NavItemProps {
 const NavItem: React.FC<NavItemProps> = ({ icon, label, to, active }) => {
   return (
     <Link href={to}>
-      <a className="flex flex-col items-center justify-center w-16 h-full cursor-pointer">
+      <div className="flex flex-col items-center justify-center w-16 h-full cursor-pointer">
         <div className={cn(
           "flex items-center justify-center h-6 mb-1 transition-colors",
           active ? "text-primary" : "text-gray-500"
@@ -65,7 +65,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, to, active }) => {
         )}>
           {label}
         </span>
-      </a>
+      </div>
     </Link>
   );
 };
