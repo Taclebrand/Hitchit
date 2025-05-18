@@ -35,7 +35,7 @@ const BottomNavigation: React.FC = () => {
           icon={<UserIcon width={24} height={24} />}
           label="Profile"
           to="/profile"
-          active={isActive('/profile')}
+          active={isActive('/profile') || isActive('/settings')}
         />
       </div>
     </div>

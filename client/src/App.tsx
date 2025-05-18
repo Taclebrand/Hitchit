@@ -10,6 +10,7 @@ import RideHistory from "@/pages/RideHistory";
 import RideDetails from "@/pages/RideDetails";
 import ProgressReport from "@/pages/ProgressReport";
 import Settings from "@/pages/Settings";
+import Profile from "@/pages/Profile";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import MobileResponsiveTest from "@/components/MobileResponsiveTest";
@@ -45,6 +46,7 @@ function App() {
         <Route path="/history" component={RideHistory} />
         <Route path="/ride-details/:id" component={RideDetails} />
         <Route path="/progress" component={ProgressReport} />
+        <Route path="/profile" component={Profile} />
         <Route path="/settings" component={Settings} />
         <Route path="/mobile-test" component={MobileResponsiveTest} />
         <Route component={NotFound} />
