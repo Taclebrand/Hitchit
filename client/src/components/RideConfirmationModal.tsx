@@ -1,12 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { MessageIcon, PhoneIcon } from "@/lib/icons";
+import { useLocation } from "wouter";
 
 interface RideConfirmationModalProps {
   onClose: () => void;
 }
 
 const RideConfirmationModal = ({ onClose }: RideConfirmationModalProps) => {
-  // Mock data for ride confirmation
+  const [, setLocation] = useLocation();
+  
+  // Data for ride confirmation
   const rideData = {
     driver: {
       name: "Michael D.",
@@ -27,6 +30,12 @@ const RideConfirmationModal = ({ onClose }: RideConfirmationModalProps) => {
     if (e.target === e.currentTarget) {
       onClose();
     }
+  };
+  
+  const handleViewTripStatus = () => {
+    // Navigate to driver tracking page
+    setLocation('/driver-tracking');
+    onClose();
   };
 
   return (
@@ -118,7 +127,7 @@ const RideConfirmationModal = ({ onClose }: RideConfirmationModalProps) => {
         
         <Button 
           className="w-full py-4 bg-primary rounded-full text-white font-medium"
-          onClick={onClose}
+          onClick={handleViewTripStatus}
         >
           View Trip Status
         </Button>
