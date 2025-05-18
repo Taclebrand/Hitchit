@@ -4,8 +4,11 @@ import {
   RideType, InsertRideType,
   DeliveryOption, InsertDeliveryOption,
   Ride, InsertRide,
-  Package, InsertPackage
+  Package, InsertPackage,
+  users, locations, rideTypes, deliveryOptions, rides, packages
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -42,192 +45,164 @@ export interface IStorage {
   updatePackageStatus(id: number, status: string): Promise<Package | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private locations: Map<number, Location>;
-  private rideTypes: Map<number, RideType>;
-  private deliveryOptions: Map<number, DeliveryOption>;
-  private rides: Map<number, Ride>;
-  private packages: Map<number, Package>;
-  
-  private userId: number;
-  private locationId: number;
-  private rideTypeId: number;
-  private deliveryOptionId: number;
-  private rideId: number;
-  private packageId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.locations = new Map();
-    this.rideTypes = new Map();
-    this.deliveryOptions = new Map();
-    this.rides = new Map();
-    this.packages = new Map();
-    
-    this.userId = 1;
-    this.locationId = 1;
-    this.rideTypeId = 1;
-    this.deliveryOptionId = 1;
-    this.rideId = 1;
-    this.packageId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const result = await db.select().from(users).where(eq(users.id, id));
+    return result.length > 0 ? result[0] : undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const result = await db.select().from(users).where(eq(users.username, username));
+    return result.length > 0 ? result[0] : undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userId++;
-    const now = new Date();
-    const user: User = { 
-      ...insertUser, 
-      id,
-      createdAt: now
+    const values = {
+      ...insertUser,
+      avatar: insertUser.avatar ?? null
     };
-    this.users.set(id, user);
-    return user;
+    const result = await db.insert(users).values(values).returning();
+    return result[0];
   }
 
   // Location operations
   async getLocation(id: number): Promise<Location | undefined> {
-    return this.locations.get(id);
+    const result = await db.select().from(locations).where(eq(locations.id, id));
+    return result.length > 0 ? result[0] : undefined;
   }
 
   async getLocationsByUserId(userId: number): Promise<Location[]> {
-    return Array.from(this.locations.values()).filter(
-      (location) => location.userId === userId,
-    );
+    return await db.select().from(locations).where(eq(locations.userId, userId));
   }
 
   async createLocation(insertLocation: InsertLocation): Promise<Location> {
-    const id = this.locationId++;
-    const now = new Date();
-    const location: Location = { 
-      ...insertLocation, 
-      id,
-      createdAt: now
+    const values = {
+      ...insertLocation,
+      icon: insertLocation.icon ?? null,
+      isDefault: insertLocation.isDefault ?? null
     };
-    this.locations.set(id, location);
-    return location;
+    const result = await db.insert(locations).values(values).returning();
+    return result[0];
   }
 
   // Ride type operations
   async getRideType(id: number): Promise<RideType | undefined> {
-    return this.rideTypes.get(id);
+    const result = await db.select().from(rideTypes).where(eq(rideTypes.id, id));
+    return result.length > 0 ? result[0] : undefined;
   }
 
   async getRideTypes(): Promise<RideType[]> {
-    return Array.from(this.rideTypes.values());
+    return await db.select().from(rideTypes);
   }
 
   async createRideType(insertRideType: InsertRideType): Promise<RideType> {
-    const id = this.rideTypeId++;
-    const rideType: RideType = { ...insertRideType, id };
-    this.rideTypes.set(id, rideType);
-    return rideType;
+    const values = {
+      ...insertRideType,
+      description: insertRideType.description ?? null,
+      icon: insertRideType.icon ?? null,
+      active: insertRideType.active ?? null
+    };
+    const result = await db.insert(rideTypes).values(values).returning();
+    return result[0];
   }
 
   // Delivery option operations
   async getDeliveryOption(id: number): Promise<DeliveryOption | undefined> {
-    return this.deliveryOptions.get(id);
+    const result = await db.select().from(deliveryOptions).where(eq(deliveryOptions.id, id));
+    return result.length > 0 ? result[0] : undefined;
   }
 
   async getDeliveryOptions(): Promise<DeliveryOption[]> {
-    return Array.from(this.deliveryOptions.values());
+    return await db.select().from(deliveryOptions);
   }
 
   async createDeliveryOption(insertDeliveryOption: InsertDeliveryOption): Promise<DeliveryOption> {
-    const id = this.deliveryOptionId++;
-    const deliveryOption: DeliveryOption = { ...insertDeliveryOption, id };
-    this.deliveryOptions.set(id, deliveryOption);
-    return deliveryOption;
+    const values = {
+      ...insertDeliveryOption,
+      description: insertDeliveryOption.description ?? null,
+      icon: insertDeliveryOption.icon ?? null,
+      active: insertDeliveryOption.active ?? null
+    };
+    const result = await db.insert(deliveryOptions).values(values).returning();
+    return result[0];
   }
 
   // Ride operations
   async getRide(id: number): Promise<Ride | undefined> {
-    return this.rides.get(id);
+    const result = await db.select().from(rides).where(eq(rides.id, id));
+    return result.length > 0 ? result[0] : undefined;
   }
 
   async getRidesByUserId(userId: number): Promise<Ride[]> {
-    return Array.from(this.rides.values()).filter(
-      (ride) => ride.userId === userId,
-    );
+    return await db.select().from(rides).where(eq(rides.userId, userId));
   }
 
   async createRide(insertRide: InsertRide): Promise<Ride> {
-    const id = this.rideId++;
-    const now = new Date();
-    const ride: Ride = { 
-      ...insertRide, 
-      id,
+    const values = {
+      ...insertRide,
       status: "pending",
       driverId: null,
-      createdAt: now,
-      completedAt: null
+      scheduledTime: insertRide.scheduledTime ?? null
     };
-    this.rides.set(id, ride);
-    return ride;
+    
+    const result = await db.insert(rides).values(values).returning();
+    return result[0];
   }
 
   async updateRideStatus(id: number, status: string): Promise<Ride | undefined> {
-    const ride = this.rides.get(id);
-    if (!ride) return undefined;
-
-    const updatedRide: Ride = {
-      ...ride,
-      status,
-      completedAt: status === "completed" ? new Date() : ride.completedAt
-    };
-    this.rides.set(id, updatedRide);
-    return updatedRide;
+    const values: Partial<Ride> = { status };
+    
+    if (status === "completed") {
+      values.completedAt = new Date();
+    }
+    
+    const result = await db
+      .update(rides)
+      .set(values)
+      .where(eq(rides.id, id))
+      .returning();
+      
+    return result.length > 0 ? result[0] : undefined;
   }
 
   // Package operations
   async getPackage(id: number): Promise<Package | undefined> {
-    return this.packages.get(id);
+    const result = await db.select().from(packages).where(eq(packages.id, id));
+    return result.length > 0 ? result[0] : undefined;
   }
 
   async getPackagesByUserId(userId: number): Promise<Package[]> {
-    return Array.from(this.packages.values()).filter(
-      (pkg) => pkg.userId === userId,
-    );
+    return await db.select().from(packages).where(eq(packages.userId, userId));
   }
 
   async createPackage(insertPackage: InsertPackage & { trackingNumber: string }): Promise<Package> {
-    const id = this.packageId++;
-    const now = new Date();
-    const pkg: Package = { 
-      ...insertPackage, 
-      id,
+    const values = {
+      ...insertPackage,
       status: "pending",
       driverId: null,
-      createdAt: now,
-      deliveredAt: null
+      description: insertPackage.description ?? null
     };
-    this.packages.set(id, pkg);
-    return pkg;
+    
+    const result = await db.insert(packages).values(values).returning();
+    return result[0];
   }
 
   async updatePackageStatus(id: number, status: string): Promise<Package | undefined> {
-    const pkg = this.packages.get(id);
-    if (!pkg) return undefined;
-
-    const updatedPackage: Package = {
-      ...pkg,
-      status,
-      deliveredAt: status === "delivered" ? new Date() : pkg.deliveredAt
-    };
-    this.packages.set(id, updatedPackage);
-    return updatedPackage;
+    const values: Partial<Package> = { status };
+    
+    if (status === "delivered") {
+      values.deliveredAt = new Date();
+    }
+    
+    const result = await db
+      .update(packages)
+      .set(values)
+      .where(eq(packages.id, id))
+      .returning();
+      
+    return result.length > 0 ? result[0] : undefined;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
