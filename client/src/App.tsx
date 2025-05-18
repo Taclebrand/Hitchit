@@ -5,6 +5,7 @@ import Home from "@/pages/Home";
 import Auth from "@/pages/Auth";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
+import MobileResponsiveTest from "@/components/MobileResponsiveTest";
 
 function App() {
   const [initializing, setInitializing] = useState(true);
@@ -31,6 +32,7 @@ function App() {
         <Route path="/" component={Welcome} />
         <Route path="/home" component={Home} />
         <Route path="/auth" component={Auth} />
+        <Route path="/mobile-test" component={MobileResponsiveTest} />
         <Route component={NotFound} />
       </Switch>
     </TooltipProvider>
