@@ -316,7 +316,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set the rider ID to the current user
       const bookingData = insertBookingSchema.parse({
         ...req.body,
-        riderId: req.user.id
+        riderId: req.user.id,
+        seats: req.body.seats || 1 // Default to 1 seat if not specified
       });
       
       // Ensure trip exists and has enough available seats
@@ -325,17 +326,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Trip not found" });
       }
       
-      if (trip.availableSeats < bookingData.seats) {
+      const seatsRequested = bookingData.seats ?? 1; // Use nullish coalescing to default to 1
+      if (trip.availableSeats < seatsRequested) {
         return res.status(400).json({ message: "Not enough available seats" });
       }
       
-      // Create the booking
-      const newBooking = await storage.createBooking(bookingData);
+      // Create the booking with the fixed seats value
+      const newBooking = await storage.createBooking({
+        ...bookingData,
+        seats: seatsRequested
+      });
       
       // Reduce available seats
       await storage.updateTripAvailableSeats(
         trip.id, 
-        trip.availableSeats - bookingData.seats
+        trip.availableSeats - seatsRequested
       );
       
       return res.status(201).json(newBooking);
@@ -452,14 +457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add method to update user (to support updating isDriver status)
-  storage.updateUser = async (id: number, data: Partial<{ isDriver: boolean }>) => {
-    const [user] = await db.update(users)
-      .set(data)
-      .where(eq(users.id, id))
-      .returning();
-    return user;
-  };
+  // We no longer need to add the updateUser method here since it's now properly defined in the storage class
 
   // Mount API router
   app.use("/api", apiRouter);
