@@ -35,6 +35,16 @@ import {
   CheckCircleIcon,
   AlertCircleIcon 
 } from "@/lib/icons";
+import {
+  AnimatedContainer,
+  AnimatedFormField,
+  PopIn,
+  SlideInFromRight,
+  StepTransition,
+  SuccessCheck,
+  AnimatedButton,
+  ErrorShake
+} from "@/lib/animations";
 
 const vehicleSchema = z.object({
   make: z.string().min(2, "Make is required"),
