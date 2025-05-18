@@ -1,14 +1,16 @@
 import { 
   User, InsertUser, 
+  Driver, InsertDriver,
+  DriverJourney, InsertDriverJourney,
   Location, InsertLocation,
   RideType, InsertRideType,
   DeliveryOption, InsertDeliveryOption,
   Ride, InsertRide,
   Package, InsertPackage,
-  users, locations, rideTypes, deliveryOptions, rides, packages
+  users, drivers, driverJourneys, locations, rideTypes, deliveryOptions, rides, packages
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or, inArray, between, like, sql, desc, gte, lte, isNull, isNotNull } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -16,6 +18,24 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserType(id: number, userType: string): Promise<User | undefined>;
+  verifyUser(id: number, isVerified: boolean): Promise<User | undefined>;
+
+  // Driver operations
+  getDriver(id: number): Promise<Driver | undefined>;
+  getDriverByUserId(userId: number): Promise<Driver | undefined>;
+  createDriver(driver: InsertDriver): Promise<Driver>;
+  updateDriverApprovalStatus(id: number, status: string): Promise<Driver | undefined>;
+  getDriversByApprovalStatus(status: string): Promise<Driver[]>;
+
+  // Driver Journey operations
+  getDriverJourney(id: number): Promise<DriverJourney | undefined>;
+  getDriverJourneysByDriverId(driverId: number): Promise<DriverJourney[]>;
+  createDriverJourney(journey: InsertDriverJourney): Promise<DriverJourney>;
+  updateDriverJourneyStatus(id: number, status: string): Promise<DriverJourney | undefined>;
+  updateDriverJourneyAvailableSeats(id: number, seats: number): Promise<DriverJourney | undefined>;
+  findMatchingJourneysForRide(pickup: { lat: number, lng: number, city: string }, destination: { lat: number, lng: number, city: string }, date: Date, radiusMiles: number): Promise<DriverJourney[]>;
+  findMatchingJourneysForPackage(pickup: { lat: number, lng: number, city: string }, delivery: { lat: number, lng: number, city: string }, date: Date, radiusMiles: number): Promise<DriverJourney[]>;
 
   // Location operations
   getLocation(id: number): Promise<Location | undefined>;
@@ -35,14 +55,18 @@ export interface IStorage {
   // Ride operations
   getRide(id: number): Promise<Ride | undefined>;
   getRidesByUserId(userId: number): Promise<Ride[]>;
+  getRidesByJourneyId(journeyId: number): Promise<Ride[]>;
   createRide(ride: InsertRide): Promise<Ride>;
   updateRideStatus(id: number, status: string): Promise<Ride | undefined>;
+  matchRideWithJourney(rideId: number, journeyId: number): Promise<Ride | undefined>;
 
   // Package operations
   getPackage(id: number): Promise<Package | undefined>;
   getPackagesByUserId(userId: number): Promise<Package[]>;
+  getPackagesByJourneyId(journeyId: number): Promise<Package[]>;
   createPackage(pkg: InsertPackage & { trackingNumber: string }): Promise<Package>;
   updatePackageStatus(id: number, status: string): Promise<Package | undefined>;
+  matchPackageWithJourney(packageId: number, journeyId: number): Promise<Package | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
