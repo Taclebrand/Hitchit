@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import Registration from "@/components/Registration";
 import OtpVerification from "@/components/OtpVerification";
 import Splash from "@/components/Splash";
+import SocialLogin from "@/components/SocialLogin";
 
 const Auth = () => {
   const [, setLocation] = useLocation();
@@ -22,6 +23,28 @@ const Auth = () => {
   const handleRegistrationComplete = (phone: string) => {
     setPhoneNumber(phone);
     setCurrentStep("verification");
+  };
+  
+  const handleGoogleLogin = () => {
+    // In a real app, we would implement Google OAuth flow
+    console.log("Google login clicked");
+    // For demo purposes, simulate successful login
+    localStorage.setItem("isAuthenticated", "true");
+    localStorage.setItem("socialLogin", "google");
+    setTimeout(() => {
+      setLocation("/home");
+    }, 500);
+  };
+  
+  const handleAppleLogin = () => {
+    // In a real app, we would implement Apple OAuth flow
+    console.log("Apple login clicked");
+    // For demo purposes, simulate successful login
+    localStorage.setItem("isAuthenticated", "true");
+    localStorage.setItem("socialLogin", "apple");
+    setTimeout(() => {
+      setLocation("/home");
+    }, 500);
   };
 
   const handleVerificationComplete = () => {
@@ -47,6 +70,8 @@ const Auth = () => {
       {currentStep === "registration" && (
         <Registration 
           onComplete={handleRegistrationComplete} 
+          onGoogleLogin={handleGoogleLogin}
+          onAppleLogin={handleAppleLogin}
         />
       )}
       
