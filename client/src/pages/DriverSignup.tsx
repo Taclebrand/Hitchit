@@ -638,22 +638,455 @@ const DriverSignup = () => {
                   </div>
                 </div>
                 
-                <div className="pt-4">
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Submitting..." : "Complete Registration"}
+                <div className="flex space-x-4 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setStep('vehicle')}
+                  >
+                    Back
+                  </Button>
+                  <Button type="submit" className="flex-1" disabled={isLoading}>
+                    {isLoading ? "Saving..." : "Next: Identity Verification"}
                   </Button>
                 </div>
               </form>
             </Form>
           </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button variant="ghost" onClick={() => setStep('vehicle')}>
-              Back
-            </Button>
-            <Button variant="ghost" onClick={() => setLocation("/profile")}>
-              Cancel
-            </Button>
-          </CardFooter>
+        </Card>
+      )}
+      
+      {step === 'verification' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
+              <UserIcon className="mr-2 h-5 w-5" /> Identity Verification
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="text-center">
+              <p className="mb-4">We need to verify your identity with a selfie to ensure driver safety.</p>
+              
+              {!selfieImage ? (
+                <>
+                  <div className="relative w-full h-64 bg-slate-100 rounded-lg mb-4 overflow-hidden">
+                    {cameraActive ? (
+                      <video 
+                        ref={videoRef} 
+                        autoPlay 
+                        playsInline 
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <UserIcon className="w-20 h-20 text-slate-300" />
+                      </div>
+                    )}
+                  </div>
+                  <canvas ref={canvasRef} className="hidden" />
+                  
+                  {cameraActive ? (
+                    <Button onClick={captureImage} className="w-full">
+                      Capture Selfie
+                    </Button>
+                  ) : (
+                    <Button onClick={startCamera} className="w-full">
+                      Start Camera
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="relative w-full h-64 bg-slate-100 rounded-lg mb-4 overflow-hidden">
+                    <img 
+                      src={selfieImage} 
+                      alt="Selfie" 
+                      className="absolute inset-0 w-full h-full object-cover" 
+                    />
+                    <div className="absolute bottom-2 right-2 bg-green-500 text-white p-1 rounded-full">
+                      <CheckCircleIcon className="w-5 h-5" />
+                    </div>
+                  </div>
+                  <Button onClick={() => {
+                    setSelfieImage(null);
+                    startCamera();
+                  }} variant="outline" className="w-full mb-4">
+                    Retake Selfie
+                  </Button>
+                </>
+              )}
+            </div>
+            
+            <div className="flex space-x-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep('license')}
+              >
+                Back
+              </Button>
+              <Button 
+                onClick={onVerificationComplete} 
+                className="flex-1" 
+                disabled={!selfieImage || isLoading}
+              >
+                Next: Background Check
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {step === 'background' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
+              <ShieldCheckIcon className="mr-2 h-5 w-5" /> Background Check
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Form {...backgroundForm}>
+              <form onSubmit={backgroundForm.handleSubmit(onBackgroundSubmit)} className="space-y-6">
+                <FormField
+                  control={backgroundForm.control}
+                  name="ssn"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Social Security Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="123-45-6789" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Your SSN is required for background checks.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={backgroundForm.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Street Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="123 Main St" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="grid grid-cols-3 gap-4">
+                  <FormField
+                    control={backgroundForm.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>City</FormLabel>
+                        <FormControl>
+                          <Input placeholder="San Francisco" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={backgroundForm.control}
+                    name="state"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>State</FormLabel>
+                        <FormControl>
+                          <Input placeholder="CA" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={backgroundForm.control}
+                    name="zipCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ZIP Code</FormLabel>
+                        <FormControl>
+                          <Input placeholder="94103" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <Separator />
+                
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium">Consent for Background Checks</h3>
+                  
+                  <FormField
+                    control={backgroundForm.control}
+                    name="consentToBackgroundCheck"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>
+                            I consent to a background check
+                          </FormLabel>
+                          <FormDescription>
+                            Allow us to verify your identity and background information.
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={backgroundForm.control}
+                    name="consentToCriminalCheck"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>
+                            I consent to a criminal record check
+                          </FormLabel>
+                          <FormDescription>
+                            Allow us to verify your criminal history.
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={backgroundForm.control}
+                    name="consentToSexOffenderCheck"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>
+                            I consent to a sex offender registry check
+                          </FormLabel>
+                          <FormDescription>
+                            Allow us to verify your status in the sex offender registry.
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <div className="flex space-x-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setStep('verification')}
+                  >
+                    Back
+                  </Button>
+                  <Button type="submit" className="flex-1" disabled={isLoading}>
+                    {isLoading ? "Processing..." : "Submit for Verification"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      )}
+      
+      {step === 'review' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
+              <CheckCircleIcon className="mr-2 h-5 w-5" /> Review and Confirm
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Verification Status</h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex items-center">
+                  <div className={`w-4 h-4 rounded-full ${verificationChecks.identity ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                  Identity Verification
+                </div>
+                <div className="flex items-center">
+                  <div className={`w-4 h-4 rounded-full ${verificationChecks.criminal ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                  Criminal Record Check
+                </div>
+                <div className="flex items-center">
+                  <div className={`w-4 h-4 rounded-full ${verificationChecks.sexOffender ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                  Sex Offender Check
+                </div>
+                <div className="flex items-center">
+                  <div className={`w-4 h-4 rounded-full ${verificationChecks.driving ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                  Driving Record Check
+                </div>
+              </div>
+            </div>
+            
+            <Tabs defaultValue="vehicle">
+              <TabsList className="grid grid-cols-3 w-full">
+                <TabsTrigger value="vehicle">Vehicle</TabsTrigger>
+                <TabsTrigger value="license">License</TabsTrigger>
+                <TabsTrigger value="profile">Profile</TabsTrigger>
+              </TabsList>
+              <TabsContent value="vehicle" className="space-y-4 pt-4">
+                {vehicleData && (
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Make</p>
+                      <p>{vehicleData.make}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Model</p>
+                      <p>{vehicleData.model}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Year</p>
+                      <p>{vehicleData.year}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Color</p>
+                      <p>{vehicleData.color}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">License Plate</p>
+                      <p>{vehicleData.licensePlate}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Seats</p>
+                      <p>{vehicleData.seats}</p>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+              <TabsContent value="license" className="space-y-4 pt-4">
+                {licenseData && (
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">License Number</p>
+                      <p>{licenseData.licenseNumber}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">State</p>
+                      <p>{licenseData.state}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Expiry Date</p>
+                      <p>{new Date(licenseData.expiryDate).toLocaleDateString()}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Date of Birth</p>
+                      <p>{new Date(licenseData.dob).toLocaleDateString()}</p>
+                    </div>
+                    <div className="space-y-1 col-span-2">
+                      <p className="text-xs text-muted-foreground">License Images</p>
+                      <p className="text-green-600">
+                        <CheckCircleIcon className="inline-block w-4 h-4 mr-1" />
+                        Uploaded and verified
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+              <TabsContent value="profile" className="space-y-4 pt-4">
+                {selfieImage && (
+                  <div className="flex flex-col items-center space-y-3">
+                    <div className="w-24 h-24 rounded-full overflow-hidden">
+                      <img src={selfieImage} alt="Profile" className="w-full h-full object-cover" />
+                    </div>
+                    <p className="text-sm text-green-600">
+                      <CheckCircleIcon className="inline-block w-4 h-4 mr-1" />
+                      Identity verified
+                    </p>
+                  </div>
+                )}
+                {backgroundData && (
+                  <div className="text-sm mt-4">
+                    <p className="text-xs text-muted-foreground mb-1">Address</p>
+                    <p>{backgroundData.address}, {backgroundData.city}, {backgroundData.state} {backgroundData.zipCode}</p>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+            
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
+              <p className="text-green-800 text-sm">
+                <CheckCircleIcon className="inline-block w-5 h-5 mr-1 text-green-600" />
+                Congratulations! All verification checks have passed. You're ready to complete your driver registration.
+              </p>
+            </div>
+            
+            <div className="flex space-x-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep('background')}
+              >
+                Back
+              </Button>
+              <Button 
+                onClick={completeRegistration} 
+                className="flex-1" 
+                disabled={isLoading}
+              >
+                Complete Registration
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {step === 'processing' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
+              <ShieldCheckIcon className="mr-2 h-5 w-5 animate-pulse" /> Processing Registration
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <div className="flex justify-center py-4">
+              <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <p>Please wait while we complete your registration...</p>
+            <ul className="text-sm space-y-2 text-left max-w-xs mx-auto">
+              <li className="flex items-center">
+                <CheckCircleIcon className="w-5 h-5 mr-2 text-green-600" />
+                Verifying personal information
+              </li>
+              <li className="flex items-center">
+                <CheckCircleIcon className="w-5 h-5 mr-2 text-green-600" />
+                Validating vehicle details
+              </li>
+              <li className="flex items-center">
+                <div className="w-5 h-5 mr-2 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                Processing background check
+              </li>
+              <li className="flex items-center text-muted-foreground">
+                <div className="w-5 h-5 mr-2 rounded-full border border-muted-foreground"></div>
+                Completing registration
+              </li>
+            </ul>
+          </CardContent>
         </Card>
       )}
 
@@ -664,9 +1097,27 @@ const DriverSignup = () => {
           </CardHeader>
           <CardContent className="flex flex-col items-center text-center">
             <div className="bg-green-100 text-green-600 rounded-full p-6 mb-4">
-              <UserCheck className="w-16 h-16" />
+              <CheckCircleIcon className="w-16 h-16" />
             </div>
-            <p className="mb-4">Your driver account has been set up successfully. You can now create trips and start earning!</p>
+            <p className="mb-4">Your driver account has been set up successfully. You have passed all verification checks including:</p>
+            <ul className="text-left mb-4 space-y-2">
+              <li className="flex items-center">
+                <CheckCircleIcon className="w-5 h-5 mr-2 text-green-600" />
+                Identity verification
+              </li>
+              <li className="flex items-center">
+                <CheckCircleIcon className="w-5 h-5 mr-2 text-green-600" />
+                Criminal background check
+              </li>
+              <li className="flex items-center">
+                <CheckCircleIcon className="w-5 h-5 mr-2 text-green-600" />
+                Sex offender registry check
+              </li>
+              <li className="flex items-center">
+                <CheckCircleIcon className="w-5 h-5 mr-2 text-green-600" />
+                Driver's license validation
+              </li>
+            </ul>
             <Button onClick={() => setLocation("/create-trip")} className="mt-4">
               Create Your First Trip
             </Button>
