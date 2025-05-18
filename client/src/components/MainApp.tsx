@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
 import RideContent from "@/components/RideContent";
 import PackageContent from "@/components/PackageContent";
@@ -6,7 +7,8 @@ import NavigationBar from "@/components/NavigationBar";
 import { 
   UserIcon, 
   NotificationIcon, 
-  SettingsIcon
+  SettingsIcon,
+  CarIcon
 } from "@/lib/icons";
 
 interface MainAppProps {
@@ -15,13 +17,19 @@ interface MainAppProps {
 }
 
 const MainApp = ({ onBookRide, onSendPackage }: MainAppProps) => {
-  const [activeTab, setActiveTab] = useState<"ride" | "package">("ride");
+  const [, setLocation] = useLocation();
+  const [activeTab, setActiveTab] = useState<"ride" | "package" | "driver">("ride");
   const [userData, setUserData] = useState({
     name: "Alex",
   });
 
-  const handleTabChange = (tab: "ride" | "package") => {
-    setActiveTab(tab);
+  const handleTabChange = (tab: "ride" | "package" | "driver") => {
+    if (tab === "driver") {
+      // Navigate to the driver signup page
+      setLocation("/driver-signup");
+    } else {
+      setActiveTab(tab);
+    }
   };
 
   return (
@@ -52,7 +60,7 @@ const MainApp = ({ onBookRide, onSendPackage }: MainAppProps) => {
         <div className="flex bg-neutral-100 rounded-full p-1">
           <button 
             onClick={() => handleTabChange("ride")}
-            className={`flex-1 py-3 px-4 rounded-full text-center font-medium transition-all ${
+            className={`flex-1 py-3 px-3 rounded-full text-center font-medium transition-all ${
               activeTab === "ride" 
                 ? "bg-white text-neutral-800 shadow" 
                 : "text-neutral-500"
@@ -62,13 +70,22 @@ const MainApp = ({ onBookRide, onSendPackage }: MainAppProps) => {
           </button>
           <button 
             onClick={() => handleTabChange("package")}
-            className={`flex-1 py-3 px-4 rounded-full text-center font-medium transition-all ${
+            className={`flex-1 py-3 px-3 rounded-full text-center font-medium transition-all ${
               activeTab === "package" 
                 ? "bg-white text-neutral-800 shadow" 
                 : "text-neutral-500"
             }`}
           >
             Package
+          </button>
+          <button 
+            onClick={() => handleTabChange("driver")}
+            className="flex-1 py-3 px-3 rounded-full text-center font-medium transition-all bg-blue-100 text-blue-700 hover:bg-blue-50"
+          >
+            <span className="flex items-center justify-center">
+              <CarIcon className="w-4 h-4 mr-1" />
+              Drive
+            </span>
           </button>
         </div>
       </div>
