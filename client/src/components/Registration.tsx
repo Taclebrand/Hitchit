@@ -62,10 +62,10 @@ const Registration = ({ onComplete, onGoogleLogin, onAppleLogin }: RegistrationP
   };
 
   return (
-    <div className="fixed inset-0 bg-white p-6 flex flex-col">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Get Started with HitchIt</h1>
-        <p className="text-gray-500">Let's get started! Enter your phone number to create your HitchIt account.</p>
+    <div className="fixed inset-0 bg-white p-4 sm:p-6 flex flex-col safe-area-top safe-area-bottom overflow-y-auto no-scrollbar">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Get Started with HitchIt</h1>
+        <p className="text-sm sm:text-base text-gray-500">Let's get started! Enter your phone number to create your HitchIt account.</p>
       </div>
 
       <Form {...form}>

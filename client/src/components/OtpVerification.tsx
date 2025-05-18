@@ -84,11 +84,12 @@ const OtpVerification = ({ phoneNumber, onComplete, onBack }: OtpVerificationPro
   };
 
   return (
-    <div className="fixed inset-0 bg-white p-6 flex flex-col">
+    <div className="fixed inset-0 bg-white p-4 sm:p-6 flex flex-col safe-area-top safe-area-bottom overflow-y-auto no-scrollbar">
       {/* Back Button */}
       <button 
         onClick={onBack}
-        className="w-10 h-10 flex items-center justify-center mb-6"
+        className="w-10 h-10 flex items-center justify-center mb-4 sm:mb-6 touch-target"
+        aria-label="Go back"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M19 12H5M12 19l-7-7 7-7" />
@@ -111,17 +112,18 @@ const OtpVerification = ({ phoneNumber, onComplete, onBack }: OtpVerificationPro
       </div>
       
       {/* OTP Input Fields */}
-      <div className="flex justify-between mb-4">
+      <div className="flex justify-between mb-4 max-w-sm mx-auto w-full">
         {otp.map((digit, index) => (
           <div
             key={index}
-            className={`w-16 h-16 flex items-center justify-center text-2xl font-semibold border rounded-md ${
+            className={`w-14 sm:w-16 h-14 sm:h-16 flex items-center justify-center text-xl sm:text-2xl font-semibold border rounded-md ${
               index === activeInput
                 ? "border-primary border-2"
                 : digit
                 ? "border-gray-300 bg-white"
                 : "border-gray-200 bg-gray-50"
             }`}
+            aria-label={`OTP digit ${index + 1}`}
           >
             {digit}
           </div>
@@ -146,12 +148,13 @@ const OtpVerification = ({ phoneNumber, onComplete, onBack }: OtpVerificationPro
       
       {/* Keypad */}
       <div className="mt-auto">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-sm mx-auto">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, "*", 0, "delete"].map((key, index) => (
             <button
               key={index}
               onClick={() => handleKeypadPress(key.toString())}
-              className="py-5 flex items-center justify-center text-xl font-semibold rounded-md hover:bg-gray-100"
+              className="py-4 sm:py-5 flex items-center justify-center text-lg sm:text-xl font-semibold rounded-md hover:bg-gray-100 touch-target"
+              aria-label={key === "delete" ? "Delete" : `Number ${key}`}
             >
               {key === "delete" ? (
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -167,7 +170,7 @@ const OtpVerification = ({ phoneNumber, onComplete, onBack }: OtpVerificationPro
         </div>
         
         {/* Bottom Indicator */}
-        <div className="w-16 h-1 bg-gray-300 rounded-full mx-auto mt-4"></div>
+        <div className="w-16 h-1 bg-gray-300 rounded-full mx-auto mt-6 mb-2 safe-area-bottom"></div>
       </div>
     </div>
   );
