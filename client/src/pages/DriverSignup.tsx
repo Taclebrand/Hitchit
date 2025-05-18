@@ -35,9 +35,14 @@ import {
   CheckCircleIcon,
   AlertCircleIcon 
 } from "@/lib/icons";
-import { motion, AnimatePresence } from "framer-motion";
-import { AnimatedButton } from "@/components/ui/animated-button";
-import { AnimatedFormField, AnimatedFormSection } from "@/components/ui/animated-form-field";
+import { 
+  FormStepContainer, 
+  AnimatedField, 
+  AnimatedTitle, 
+  AnimatedButton, 
+  SuccessIcon,
+  StaggeredChildren
+} from "@/components/MicroAnimations";
 
 const vehicleSchema = z.object({
   make: z.string().min(2, "Make is required"),
@@ -400,260 +405,280 @@ const DriverSignup = () => {
 
   return (
     <div className="container px-4 py-8 max-w-lg mx-auto">
-      <AnimatePresence mode="wait">
-        {step === 'vehicle' && (
-          <motion.div
-            key="vehicle"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card>
-              <CardHeader>
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1, duration: 0.3 }}
+      {/* Vehicle Information Form */}
+      <FormStepContainer isActive={step === 'vehicle'} stepKey="vehicle">
+        <Card>
+          <CardHeader>
+            <AnimatedTitle>
+              <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
+                <CarIcon className="mr-2 h-5 w-5" /> Register Your Vehicle
+              </CardTitle>
+            </AnimatedTitle>
+          </CardHeader>
+          <CardContent>
+            <Form {...vehicleForm}>
+              <form onSubmit={vehicleForm.handleSubmit(onVehicleSubmit)} className="space-y-6">
+                <StaggeredChildren>
+                  <AnimatedField delay={0.1}>
+                    <FormField
+                      control={vehicleForm.control}
+                      name="make"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Make</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Toyota" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </AnimatedField>
+                  
+                  <AnimatedField delay={0.2}>
+                    <FormField
+                      control={vehicleForm.control}
+                      name="model"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Model</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Camry" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </AnimatedField>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <AnimatedField delay={0.3}>
+                      <FormField
+                        control={vehicleForm.control}
+                        name="year"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Year</FormLabel>
+                            <FormControl>
+                              <Input type="number" min={1980} max={new Date().getFullYear() + 1} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </AnimatedField>
+                    
+                    <AnimatedField delay={0.3}>
+                      <FormField
+                        control={vehicleForm.control}
+                        name="color"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Color</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Silver" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </AnimatedField>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <AnimatedField delay={0.4}>
+                      <FormField
+                        control={vehicleForm.control}
+                        name="licensePlate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>License Plate</FormLabel>
+                            <FormControl>
+                              <Input placeholder="ABC123" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </AnimatedField>
+                    
+                    <AnimatedField delay={0.4}>
+                      <FormField
+                        control={vehicleForm.control}
+                        name="seats"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Available Seats</FormLabel>
+                            <FormControl>
+                              <Input type="number" min={1} max={7} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </AnimatedField>
+                  </div>
+                </StaggeredChildren>
+                
+                <AnimatedButton 
+                  type="submit" 
+                  className="w-full" 
+                  isLoading={isLoading}
                 >
-                  <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
-                    <CarIcon className="mr-2 h-5 w-5" /> Register Your Vehicle
-                  </CardTitle>
-                </motion.div>
-              </CardHeader>
-              <CardContent>
-                <Form {...vehicleForm}>
-                  <form onSubmit={vehicleForm.handleSubmit(onVehicleSubmit)} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={vehicleForm.control}
-                    name="make"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Make</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Toyota" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={vehicleForm.control}
-                    name="model"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Model</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Camry" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={vehicleForm.control}
-                    name="year"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Year</FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={vehicleForm.control}
-                    name="color"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Color</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Silver" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={vehicleForm.control}
-                    name="licensePlate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>License Plate</FormLabel>
-                        <FormControl>
-                          <Input placeholder="ABC123" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={vehicleForm.control}
-                    name="seats"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Available Seats</FormLabel>
-                        <FormControl>
-                          <Input type="number" min={1} max={7} {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <div className="pt-4">
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Saving..." : "Continue"}
-                  </Button>
-                </div>
+                  Continue
+                </AnimatedButton>
               </form>
             </Form>
           </CardContent>
           <CardFooter className="flex justify-center">
-            <Button variant="ghost" onClick={() => setLocation("/profile")}>
-              Cancel
-            </Button>
+            <AnimatedField delay={0.5}>
+              <Button variant="ghost" onClick={() => setLocation("/profile")}>
+                Cancel
+              </Button>
+            </AnimatedField>
           </CardFooter>
         </Card>
-      )}
+      </FormStepContainer>
 
-      {step === 'license' && (
+      {/* License Information Form */}
+      <FormStepContainer isActive={step === 'license'} stepKey="license">
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
-              <LicenseIcon className="mr-2 h-5 w-5" /> Driver License Details
-            </CardTitle>
+            <AnimatedTitle>
+              <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
+                <LicenseIcon className="mr-2 h-5 w-5" /> Driver License Details
+              </CardTitle>
+            </AnimatedTitle>
           </CardHeader>
           <CardContent>
             <Form {...licenseForm}>
               <form onSubmit={licenseForm.handleSubmit(onLicenseSubmit)} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={licenseForm.control}
-                    name="licenseNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>License Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="DL12345678" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={licenseForm.control}
-                    name="state"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>State</FormLabel>
-                        <FormControl>
-                          <Input placeholder="CA" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={licenseForm.control}
-                    name="expiryDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Expiry Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={licenseForm.control}
-                    name="dob"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Date of Birth</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                {/* License Images Upload */}
-                <div className="space-y-4 pt-3">
-                  <h3 className="text-sm font-medium">Upload License Images</h3>
+                <StaggeredChildren>
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <input
-                        type="file"
-                        ref={fileInputRefFront}
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleLicenseImageUpload('front')}
+                    <AnimatedField delay={0.1}>
+                      <FormField
+                        control={licenseForm.control}
+                        name="licenseNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>License Number</FormLabel>
+                            <FormControl>
+                              <Input placeholder="DL12345678" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={() => fileInputRefFront.current?.click()}
-                      >
-                        <FileUploadIcon className="w-4 h-4 mr-2" />
-                        Front Side
-                      </Button>
-                      {licenseForm.getValues('licenseImageFront') && (
-                        <div className="mt-2 text-center text-xs text-green-600">
-                          <CheckCircleIcon className="inline-block w-4 h-4 mr-1" />
-                          Uploaded
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <input
-                        type="file"
-                        ref={fileInputRefBack}
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleLicenseImageUpload('back')}
+                    </AnimatedField>
+                    
+                    <AnimatedField delay={0.1}>
+                      <FormField
+                        control={licenseForm.control}
+                        name="state"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>State</FormLabel>
+                            <FormControl>
+                              <Input placeholder="CA" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={() => fileInputRefBack.current?.click()}
-                      >
-                        <FileUploadIcon className="w-4 h-4 mr-2" />
-                        Back Side
-                      </Button>
-                      {licenseForm.getValues('licenseImageBack') && (
-                        <div className="mt-2 text-center text-xs text-green-600">
-                          <CheckCircleIcon className="inline-block w-4 h-4 mr-1" />
-                          Uploaded
-                        </div>
-                      )}
-                    </div>
+                    </AnimatedField>
                   </div>
-                </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <AnimatedField delay={0.2}>
+                      <FormField
+                        control={licenseForm.control}
+                        name="expiryDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Expiry Date</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </AnimatedField>
+                    
+                    <AnimatedField delay={0.2}>
+                      <FormField
+                        control={licenseForm.control}
+                        name="dob"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Date of Birth</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </AnimatedField>
+                  </div>
+                  
+                  {/* License Images Upload */}
+                  <AnimatedField delay={0.3}>
+                    <div className="space-y-4 pt-3">
+                      <h3 className="text-sm font-medium">Upload License Images</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <input
+                            type="file"
+                            ref={fileInputRefFront}
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleLicenseImageUpload('front')}
+                          />
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={() => fileInputRefFront.current?.click()}
+                          >
+                            <FileUploadIcon className="w-4 h-4 mr-2" />
+                            Front Side
+                          </Button>
+                          {licenseForm.getValues('licenseImageFront') && (
+                            <div className="mt-2 text-center text-xs text-green-600">
+                              <CheckCircleIcon className="inline-block w-4 h-4 mr-1" />
+                              Uploaded
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <input
+                            type="file"
+                            ref={fileInputRefBack}
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleLicenseImageUpload('back')}
+                          />
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={() => fileInputRefBack.current?.click()}
+                          >
+                            <FileUploadIcon className="w-4 h-4 mr-2" />
+                            Back Side
+                          </Button>
+                          {licenseForm.getValues('licenseImageBack') && (
+                            <div className="mt-2 text-center text-xs text-green-600">
+                              <CheckCircleIcon className="inline-block w-4 h-4 mr-1" />
+                              Uploaded
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </AnimatedField>
+                </StaggeredChildren>
                 
                 <div className="flex space-x-4 pt-4">
                   <Button
@@ -663,76 +688,81 @@ const DriverSignup = () => {
                   >
                     Back
                   </Button>
-                  <Button type="submit" className="flex-1" disabled={isLoading}>
-                    {isLoading ? "Saving..." : "Next: Identity Verification"}
-                  </Button>
+                  <AnimatedButton type="submit" className="flex-1" isLoading={isLoading}>
+                    Next: Identity Verification
+                  </AnimatedButton>
                 </div>
               </form>
             </Form>
           </CardContent>
         </Card>
-      )}
+      </FormStepContainer>
       
-      {step === 'verification' && (
+      {/* Identity Verification Form */}
+      <FormStepContainer isActive={step === 'verification'} stepKey="verification">
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
-              <UserIcon className="mr-2 h-5 w-5" /> Identity Verification
-            </CardTitle>
+            <AnimatedTitle>
+              <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
+                <UserIcon className="mr-2 h-5 w-5" /> Identity Verification
+              </CardTitle>
+            </AnimatedTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="text-center">
-              <p className="mb-4">We need to verify your identity with a selfie to ensure driver safety.</p>
-              
-              {!selfieImage ? (
-                <>
-                  <div className="relative w-full h-64 bg-slate-100 rounded-lg mb-4 overflow-hidden">
-                    {cameraActive ? (
-                      <video 
-                        ref={videoRef} 
-                        autoPlay 
-                        playsInline 
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <UserIcon className="w-20 h-20 text-slate-300" />
-                      </div>
-                    )}
-                  </div>
-                  <canvas ref={canvasRef} className="hidden" />
-                  
-                  {cameraActive ? (
-                    <Button onClick={captureImage} className="w-full">
-                      Capture Selfie
-                    </Button>
-                  ) : (
-                    <Button onClick={startCamera} className="w-full">
-                      Start Camera
-                    </Button>
-                  )}
-                </>
-              ) : (
-                <>
-                  <div className="relative w-full h-64 bg-slate-100 rounded-lg mb-4 overflow-hidden">
-                    <img 
-                      src={selfieImage} 
-                      alt="Selfie" 
-                      className="absolute inset-0 w-full h-full object-cover" 
-                    />
-                    <div className="absolute bottom-2 right-2 bg-green-500 text-white p-1 rounded-full">
-                      <CheckCircleIcon className="w-5 h-5" />
+            <AnimatedField delay={0.1}>
+              <div className="text-center">
+                <p className="mb-4">We need to verify your identity with a selfie to ensure driver safety.</p>
+                
+                {!selfieImage ? (
+                  <>
+                    <div className="relative w-full h-64 bg-slate-100 rounded-lg mb-4 overflow-hidden">
+                      {cameraActive ? (
+                        <video 
+                          ref={videoRef} 
+                          autoPlay 
+                          playsInline 
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <UserIcon className="w-20 h-20 text-slate-300" />
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <Button onClick={() => {
-                    setSelfieImage(null);
-                    startCamera();
-                  }} variant="outline" className="w-full mb-4">
-                    Retake Selfie
-                  </Button>
-                </>
-              )}
-            </div>
+                    <canvas ref={canvasRef} className="hidden" />
+                    
+                    {cameraActive ? (
+                      <Button onClick={captureImage} className="w-full">
+                        Capture Selfie
+                      </Button>
+                    ) : (
+                      <Button onClick={startCamera} className="w-full">
+                        Start Camera
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="relative w-full h-64 bg-slate-100 rounded-lg mb-4 overflow-hidden">
+                      <img 
+                        src={selfieImage} 
+                        alt="Selfie" 
+                        className="absolute inset-0 w-full h-full object-cover" 
+                      />
+                      <div className="absolute bottom-2 right-2 bg-green-500 text-white p-1 rounded-full">
+                        <CheckCircleIcon className="w-5 h-5" />
+                      </div>
+                    </div>
+                    <Button onClick={() => {
+                      setSelfieImage(null);
+                      startCamera();
+                    }} variant="outline" className="w-full mb-4">
+                      Retake Selfie
+                    </Button>
+                  </>
+                )}
+              </div>
+            </AnimatedField>
             
             <div className="flex space-x-4">
               <Button
@@ -742,175 +772,192 @@ const DriverSignup = () => {
               >
                 Back
               </Button>
-              <Button 
+              <AnimatedButton 
                 onClick={onVerificationComplete} 
                 className="flex-1" 
                 disabled={!selfieImage || isLoading}
               >
                 Next: Background Check
-              </Button>
+              </AnimatedButton>
             </div>
           </CardContent>
         </Card>
-      )}
+      </FormStepContainer>
       
-      {step === 'background' && (
+      {/* Background Check Form */}
+      <FormStepContainer isActive={step === 'background'} stepKey="background">
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
-              <ShieldCheckIcon className="mr-2 h-5 w-5" /> Background Check
-            </CardTitle>
+            <AnimatedTitle>
+              <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
+                <ShieldCheckIcon className="mr-2 h-5 w-5" /> Background Check
+              </CardTitle>
+            </AnimatedTitle>
           </CardHeader>
           <CardContent>
             <Form {...backgroundForm}>
               <form onSubmit={backgroundForm.handleSubmit(onBackgroundSubmit)} className="space-y-6">
-                <FormField
-                  control={backgroundForm.control}
-                  name="ssn"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Social Security Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="123-45-6789" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Your SSN is required for background checks.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={backgroundForm.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Street Address</FormLabel>
-                      <FormControl>
-                        <Input placeholder="123 Main St" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="grid grid-cols-3 gap-4">
-                  <FormField
-                    control={backgroundForm.control}
-                    name="city"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>City</FormLabel>
-                        <FormControl>
-                          <Input placeholder="San Francisco" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={backgroundForm.control}
-                    name="state"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>State</FormLabel>
-                        <FormControl>
-                          <Input placeholder="CA" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={backgroundForm.control}
-                    name="zipCode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>ZIP Code</FormLabel>
-                        <FormControl>
-                          <Input placeholder="94103" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <StaggeredChildren>
+                  <AnimatedField delay={0.1}>
+                    <FormField
+                      control={backgroundForm.control}
+                      name="ssn"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Social Security Number</FormLabel>
+                          <FormControl>
+                            <Input placeholder="123-45-6789" {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            Your SSN is required for background checks.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </AnimatedField>
+                  
+                  <AnimatedField delay={0.2}>
+                    <FormField
+                      control={backgroundForm.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Street Address</FormLabel>
+                          <FormControl>
+                            <Input placeholder="123 Main St" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </AnimatedField>
+                  
+                  <div className="grid grid-cols-3 gap-4">
+                    <AnimatedField delay={0.3}>
+                      <FormField
+                        control={backgroundForm.control}
+                        name="city"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>City</FormLabel>
+                            <FormControl>
+                              <Input placeholder="San Francisco" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </AnimatedField>
+                    <AnimatedField delay={0.3}>
+                      <FormField
+                        control={backgroundForm.control}
+                        name="state"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>State</FormLabel>
+                            <FormControl>
+                              <Input placeholder="CA" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </AnimatedField>
+                    <AnimatedField delay={0.3}>
+                      <FormField
+                        control={backgroundForm.control}
+                        name="zipCode"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>ZIP Code</FormLabel>
+                            <FormControl>
+                              <Input placeholder="94103" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </AnimatedField>
+                  </div>
+                </StaggeredChildren>
                 
                 <Separator />
                 
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Consent for Background Checks</h3>
-                  
-                  <FormField
-                    control={backgroundForm.control}
-                    name="consentToBackgroundCheck"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>
-                            I consent to a background check
-                          </FormLabel>
-                          <FormDescription>
-                            Allow us to verify your identity and background information.
-                          </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={backgroundForm.control}
-                    name="consentToCriminalCheck"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>
-                            I consent to a criminal record check
-                          </FormLabel>
-                          <FormDescription>
-                            Allow us to verify your criminal history.
-                          </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={backgroundForm.control}
-                    name="consentToSexOffenderCheck"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>
-                            I consent to a sex offender registry check
-                          </FormLabel>
-                          <FormDescription>
-                            Allow us to verify your status in the sex offender registry.
-                          </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <AnimatedField delay={0.4}>
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium">Consent for Background Checks</h3>
+                    
+                    <FormField
+                      control={backgroundForm.control}
+                      name="consentToBackgroundCheck"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>
+                              I consent to a background check
+                            </FormLabel>
+                            <FormDescription>
+                              Allow us to verify your identity and background information.
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={backgroundForm.control}
+                      name="consentToCriminalCheck"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>
+                              I consent to a criminal record check
+                            </FormLabel>
+                            <FormDescription>
+                              Allow us to verify your criminal history.
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={backgroundForm.control}
+                      name="consentToSexOffenderCheck"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>
+                              I consent to a sex offender registry check
+                            </FormLabel>
+                            <FormDescription>
+                              Allow us to verify your status in the sex offender registry.
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </AnimatedField>
                 
                 <div className="flex space-x-4">
                   <Button
@@ -920,138 +967,147 @@ const DriverSignup = () => {
                   >
                     Back
                   </Button>
-                  <Button type="submit" className="flex-1" disabled={isLoading}>
-                    {isLoading ? "Processing..." : "Submit for Verification"}
-                  </Button>
+                  <AnimatedButton type="submit" className="flex-1" isLoading={isLoading}>
+                    Submit for Verification
+                  </AnimatedButton>
                 </div>
               </form>
             </Form>
           </CardContent>
         </Card>
-      )}
+      </FormStepContainer>
       
-      {step === 'review' && (
+      {/* Review and Confirm Form */}
+      <FormStepContainer isActive={step === 'review'} stepKey="review">
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
-              <CheckCircleIcon className="mr-2 h-5 w-5" /> Review and Confirm
-            </CardTitle>
+            <AnimatedTitle>
+              <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
+                <CheckCircleIcon className="mr-2 h-5 w-5" /> Review and Confirm
+              </CardTitle>
+            </AnimatedTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Verification Status</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center">
-                  <div className={`w-4 h-4 rounded-full ${verificationChecks.identity ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
-                  Identity Verification
-                </div>
-                <div className="flex items-center">
-                  <div className={`w-4 h-4 rounded-full ${verificationChecks.criminal ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
-                  Criminal Record Check
-                </div>
-                <div className="flex items-center">
-                  <div className={`w-4 h-4 rounded-full ${verificationChecks.sexOffender ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
-                  Sex Offender Check
-                </div>
-                <div className="flex items-center">
-                  <div className={`w-4 h-4 rounded-full ${verificationChecks.driving ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
-                  Driving Record Check
+            <AnimatedField delay={0.1}>
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Verification Status</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center">
+                    <div className={`w-4 h-4 rounded-full ${verificationChecks.identity ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                    Identity Verification
+                  </div>
+                  <div className="flex items-center">
+                    <div className={`w-4 h-4 rounded-full ${verificationChecks.criminal ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                    Criminal Record Check
+                  </div>
+                  <div className="flex items-center">
+                    <div className={`w-4 h-4 rounded-full ${verificationChecks.sexOffender ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                    Sex Offender Check
+                  </div>
+                  <div className="flex items-center">
+                    <div className={`w-4 h-4 rounded-full ${verificationChecks.driving ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                    Driving Record Check
+                  </div>
                 </div>
               </div>
-            </div>
+            </AnimatedField>
             
-            <Tabs defaultValue="vehicle">
-              <TabsList className="grid grid-cols-3 w-full">
-                <TabsTrigger value="vehicle">Vehicle</TabsTrigger>
-                <TabsTrigger value="license">License</TabsTrigger>
-                <TabsTrigger value="profile">Profile</TabsTrigger>
-              </TabsList>
-              <TabsContent value="vehicle" className="space-y-4 pt-4">
-                {vehicleData && (
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Make</p>
-                      <p>{vehicleData.make}</p>
+            <AnimatedField delay={0.2}>
+              <Tabs defaultValue="vehicle">
+                <TabsList className="grid grid-cols-3 w-full">
+                  <TabsTrigger value="vehicle">Vehicle</TabsTrigger>
+                  <TabsTrigger value="license">License</TabsTrigger>
+                  <TabsTrigger value="profile">Profile</TabsTrigger>
+                </TabsList>
+                <TabsContent value="vehicle" className="space-y-4 pt-4">
+                  {vehicleData && (
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Make</p>
+                        <p>{vehicleData.make}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Model</p>
+                        <p>{vehicleData.model}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Year</p>
+                        <p>{vehicleData.year}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Color</p>
+                        <p>{vehicleData.color}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">License Plate</p>
+                        <p>{vehicleData.licensePlate}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Seats</p>
+                        <p>{vehicleData.seats}</p>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Model</p>
-                      <p>{vehicleData.model}</p>
+                  )}
+                </TabsContent>
+                <TabsContent value="license" className="space-y-4 pt-4">
+                  {licenseData && (
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">License Number</p>
+                        <p>{licenseData.licenseNumber}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">State</p>
+                        <p>{licenseData.state}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Expiry Date</p>
+                        <p>{new Date(licenseData.expiryDate).toLocaleDateString()}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Date of Birth</p>
+                        <p>{new Date(licenseData.dob).toLocaleDateString()}</p>
+                      </div>
+                      <div className="space-y-1 col-span-2">
+                        <p className="text-xs text-muted-foreground">License Images</p>
+                        <p className="text-green-600">
+                          <CheckCircleIcon className="inline-block w-4 h-4 mr-1" />
+                          Uploaded and verified
+                        </p>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Year</p>
-                      <p>{vehicleData.year}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Color</p>
-                      <p>{vehicleData.color}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">License Plate</p>
-                      <p>{vehicleData.licensePlate}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Seats</p>
-                      <p>{vehicleData.seats}</p>
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="license" className="space-y-4 pt-4">
-                {licenseData && (
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">License Number</p>
-                      <p>{licenseData.licenseNumber}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">State</p>
-                      <p>{licenseData.state}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Expiry Date</p>
-                      <p>{new Date(licenseData.expiryDate).toLocaleDateString()}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Date of Birth</p>
-                      <p>{new Date(licenseData.dob).toLocaleDateString()}</p>
-                    </div>
-                    <div className="space-y-1 col-span-2">
-                      <p className="text-xs text-muted-foreground">License Images</p>
-                      <p className="text-green-600">
+                  )}
+                </TabsContent>
+                <TabsContent value="profile" className="space-y-4 pt-4">
+                  {selfieImage && (
+                    <div className="flex flex-col items-center space-y-3">
+                      <div className="w-24 h-24 rounded-full overflow-hidden">
+                        <img src={selfieImage} alt="Profile" className="w-full h-full object-cover" />
+                      </div>
+                      <p className="text-sm text-green-600">
                         <CheckCircleIcon className="inline-block w-4 h-4 mr-1" />
-                        Uploaded and verified
+                        Identity verified
                       </p>
                     </div>
-                  </div>
-                )}
-              </TabsContent>
-              <TabsContent value="profile" className="space-y-4 pt-4">
-                {selfieImage && (
-                  <div className="flex flex-col items-center space-y-3">
-                    <div className="w-24 h-24 rounded-full overflow-hidden">
-                      <img src={selfieImage} alt="Profile" className="w-full h-full object-cover" />
+                  )}
+                  {backgroundData && (
+                    <div className="text-sm mt-4">
+                      <p className="text-xs text-muted-foreground mb-1">Address</p>
+                      <p>{backgroundData.address}, {backgroundData.city}, {backgroundData.state} {backgroundData.zipCode}</p>
                     </div>
-                    <p className="text-sm text-green-600">
-                      <CheckCircleIcon className="inline-block w-4 h-4 mr-1" />
-                      Identity verified
-                    </p>
-                  </div>
-                )}
-                {backgroundData && (
-                  <div className="text-sm mt-4">
-                    <p className="text-xs text-muted-foreground mb-1">Address</p>
-                    <p>{backgroundData.address}, {backgroundData.city}, {backgroundData.state} {backgroundData.zipCode}</p>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </AnimatedField>
             
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
-              <p className="text-green-800 text-sm">
-                <CheckCircleIcon className="inline-block w-5 h-5 mr-1 text-green-600" />
-                Congratulations! All verification checks have passed. You're ready to complete your driver registration.
-              </p>
-            </div>
+            <AnimatedField delay={0.3}>
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
+                <p className="text-green-800 text-sm">
+                  <CheckCircleIcon className="inline-block w-5 h-5 mr-1 text-green-600" />
+                  Congratulations! All verification checks have passed. You're ready to complete your driver registration.
+                </p>
+              </div>
+            </AnimatedField>
             
             <div className="flex space-x-4">
               <Button
@@ -1061,24 +1117,27 @@ const DriverSignup = () => {
               >
                 Back
               </Button>
-              <Button 
+              <AnimatedButton 
                 onClick={completeRegistration} 
                 className="flex-1" 
                 disabled={isLoading}
               >
                 Complete Registration
-              </Button>
+              </AnimatedButton>
             </div>
           </CardContent>
         </Card>
-      )}
+      </FormStepContainer>
       
-      {step === 'processing' && (
+      {/* Processing Form */}
+      <FormStepContainer isActive={step === 'processing'} stepKey="processing">
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
-              <ShieldCheckIcon className="mr-2 h-5 w-5 animate-pulse" /> Processing Registration
-            </CardTitle>
+            <AnimatedTitle>
+              <CardTitle className="text-xl font-bold text-center flex items-center justify-center">
+                <ShieldCheckIcon className="mr-2 h-5 w-5 animate-pulse" /> Processing Registration
+              </CardTitle>
+            </AnimatedTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <div className="flex justify-center py-4">
@@ -1105,42 +1164,50 @@ const DriverSignup = () => {
             </ul>
           </CardContent>
         </Card>
-      )}
+      </FormStepContainer>
 
-      {step === 'complete' && (
+      {/* Complete Form */}
+      <FormStepContainer isActive={step === 'complete'} stepKey="complete">
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-center">Registration Complete!</CardTitle>
+            <AnimatedTitle>
+              <CardTitle className="text-xl font-bold text-center flex items-center justify-center text-green-600">
+                <CheckCircleIcon className="mr-2 h-5 w-5" /> Registration Complete
+              </CardTitle>
+            </AnimatedTitle>
           </CardHeader>
-          <CardContent className="flex flex-col items-center text-center">
-            <div className="bg-green-100 text-green-600 rounded-full p-6 mb-4">
-              <CheckCircleIcon className="w-16 h-16" />
+          <CardContent className="text-center space-y-4">
+            <SuccessIcon />
+            
+            <div>
+              <h3 className="text-lg font-medium">Congratulations!</h3>
+              <p className="text-muted-foreground mb-4">You are now registered as a driver.</p>
             </div>
-            <p className="mb-4">Your driver account has been set up successfully. You have passed all verification checks including:</p>
-            <ul className="text-left mb-4 space-y-2">
-              <li className="flex items-center">
-                <CheckCircleIcon className="w-5 h-5 mr-2 text-green-600" />
-                Identity verification
-              </li>
-              <li className="flex items-center">
-                <CheckCircleIcon className="w-5 h-5 mr-2 text-green-600" />
-                Criminal background check
-              </li>
-              <li className="flex items-center">
-                <CheckCircleIcon className="w-5 h-5 mr-2 text-green-600" />
-                Sex offender registry check
-              </li>
-              <li className="flex items-center">
-                <CheckCircleIcon className="w-5 h-5 mr-2 text-green-600" />
-                Driver's license validation
-              </li>
-            </ul>
-            <Button onClick={() => setLocation("/create-trip")} className="mt-4">
-              Create Your First Trip
-            </Button>
+            
+            <AnimatedField delay={0.3}>
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-left">
+                <p className="font-medium mb-2">What's next?</p>
+                <ul className="space-y-2">
+                  <li className="flex items-center">
+                    <CheckCircleIcon className="w-4 h-4 mr-2 text-green-600" />
+                    Create your first trip
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircleIcon className="w-4 h-4 mr-2 text-green-600" />
+                    Accept ride requests
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircleIcon className="w-4 h-4 mr-2 text-green-600" />
+                    Manage your schedule
+                  </li>
+                </ul>
+              </div>
+            </AnimatedField>
+            
+            <p className="text-sm">You will be redirected to the trips page shortly...</p>
           </CardContent>
         </Card>
-      )}
+      </FormStepContainer>
     </div>
   );
 };
