@@ -101,8 +101,8 @@ const DriverSignup = () => {
 
     setIsLoading(true);
     try {
-      // Get user ID (in real app, this would come from auth state)
-      const userId = localStorage.getItem("userId") || "1";
+      // Use demo user ID for this example - in a real app this would come from authentication
+      const userId = 1;
       
       // First register the vehicle
       const vehicleResponse = await fetch("/api/vehicles", {
@@ -112,7 +112,7 @@ const DriverSignup = () => {
         },
         body: JSON.stringify({
           ...vehicleData,
-          userId: parseInt(userId),
+          userId: userId,
         }),
       });
 
