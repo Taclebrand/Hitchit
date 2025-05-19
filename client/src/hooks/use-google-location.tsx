@@ -48,20 +48,35 @@ export function useGoogleLocation(options: GoogleLocationOptions = {}) {
       }
 
       try {
+        // Log that we're attempting to get location
+        console.log("Requesting user location...");
+        
         // First get the current position
         const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          // Use a timeout to handle browsers that don't properly reject geolocation requests
+          const timeoutId = setTimeout(() => {
+            reject(new Error('Location request timed out. Try enabling location services.'));
+          }, 15000);
+          
           navigator.geolocation.getCurrentPosition(
-            resolve, 
-            reject, 
+            (position) => {
+              clearTimeout(timeoutId);
+              resolve(position);
+            }, 
+            (error) => {
+              clearTimeout(timeoutId);
+              reject(error);
+            }, 
             {
-              enableHighAccuracy: mergedOptions.enableHighAccuracy,
-              timeout: mergedOptions.timeout,
-              maximumAge: mergedOptions.maximumAge,
+              enableHighAccuracy: true, // Always use high accuracy for better results
+              timeout: 10000,
+              maximumAge: 0, // Always get a fresh location
             }
           );
         });
 
         const { latitude, longitude } = position.coords;
+        console.log("Got coordinates:", latitude, longitude);
         
         if (isMounted) {
           setState(prev => ({
@@ -73,7 +88,9 @@ export function useGoogleLocation(options: GoogleLocationOptions = {}) {
 
         // Then get the address from Google Maps
         try {
+          console.log("Getting address from coordinates...");
           const locationResult = await googleMapsService.getAddressFromCoordinates(latitude, longitude);
+          console.log("Got address:", locationResult.formattedAddress);
           
           if (isMounted) {
             setState(prev => ({
@@ -122,11 +139,7 @@ export function useGoogleLocation(options: GoogleLocationOptions = {}) {
     return () => {
       isMounted = false;
     };
-  }, [
-    mergedOptions.enableHighAccuracy,
-    mergedOptions.timeout,
-    mergedOptions.maximumAge
-  ]);
+  }, []);
 
   // Methods to expose to component
   const getAddressFromCoordinates = async (lat: number, lng: number): Promise<LocationResult> => {

@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useGoogleLocation } from '@/hooks/use-google-location';
 import { googleMapsService, Coordinates } from '@/services/GoogleMapsService';
+import { useToast } from "@/hooks/use-toast";
 import { MapPinIcon, LoaderIcon, Navigation, Search } from 'lucide-react';
 
 // Type definitions
@@ -23,6 +24,8 @@ export function GoogleLocationPicker({
   label = "Current Location",
   buttonText = "Use Current Location"
 }: GoogleLocationPickerProps) {
+  const { toast } = useToast();
+  
   // Using our custom Google location hook for location services
   const {
     loading,
@@ -148,13 +151,56 @@ export function GoogleLocationPicker({
   };
 
   // Use current device location
-  const handleUseCurrentLocation = () => {
-    if (coordinates && address) {
-      onLocationSelect({
-        address,
-        lat: coordinates.lat,
-        lng: coordinates.lng,
-        placeId: placeId || undefined
+  const handleUseCurrentLocation = async () => {
+    // Manually trigger geolocation API request for real-time location
+    if (navigator.geolocation) {
+      setIsSearching(true);
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
+        });
+        
+        const { latitude, longitude } = position.coords;
+        console.log("Current position:", latitude, longitude);
+        
+        // Get address for these coordinates
+        const result = await googleMapsService.getAddressFromCoordinates(latitude, longitude);
+        console.log("Address found:", result.formattedAddress);
+        
+        // Pass to parent component
+        onLocationSelect({
+          address: result.formattedAddress,
+          lat: latitude,
+          lng: longitude,
+          placeId: result.placeId
+        });
+      } catch (error) {
+        console.error("Error getting current location:", error);
+        
+        let errorMessage = "Could not detect your location";
+        if (error instanceof GeolocationPositionError) {
+          if (error.code === error.PERMISSION_DENIED) {
+            errorMessage = "Please enable location permissions in your browser settings";
+          }
+        }
+        
+        toast({
+          title: "Location error",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      } finally {
+        setIsSearching(false);
+      }
+    } else {
+      toast({
+        title: "Location not supported",
+        description: "Your browser doesn't support geolocation",
+        variant: "destructive"
       });
     }
   };
