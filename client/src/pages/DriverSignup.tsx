@@ -357,20 +357,43 @@ const DriverSignup = () => {
   const onVehicleSubmit = async (data: VehicleFormValues) => {
     setIsLoading(true);
     try {
+      // Handle year conversion - ensure it's an integer for the API
+      const processedData = {
+        ...data,
+        year: typeof data.year === 'string' ? parseInt(data.year, 10) : data.year
+      };
+      
       // Store vehicle data for the next step
-      setVehicleData(data);
+      setVehicleData(processedData);
+      
+      // Attempt to register the vehicle with the API
+      const response = await fetch('/api/vehicles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userId: 1, // Using our test user
+          ...processedData
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to register vehicle');
+      }
       
       // Proceed to next step
       setStep('license');
       toast({
-        title: "Vehicle information saved",
-        description: "Now please provide your driver license details",
+        title: "Vehicle information registered",
+        description: "Your vehicle has been registered successfully. Now please provide your driver license details.",
       });
     } catch (error) {
-      console.error("Error submitting vehicle data:", error);
+      console.error("Error registering as driver:", error);
       toast({
         title: "Error",
-        description: "Failed to save vehicle information. Please try again.",
+        description: "Failed to register vehicle. Please check your information and try again.",
         variant: "destructive",
       });
     } finally {

@@ -33,6 +33,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const vehicles = pgTable("vehicles", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
+  type: text("type").notNull().default("Sedan"),
   make: text("make").notNull(),
   model: text("model").notNull(),
   year: integer("year").notNull(),
@@ -44,6 +45,7 @@ export const vehicles = pgTable("vehicles", {
 
 export const insertVehicleSchema = createInsertSchema(vehicles).pick({
   userId: true,
+  type: true,
   make: true,
   model: true,
   year: true,
