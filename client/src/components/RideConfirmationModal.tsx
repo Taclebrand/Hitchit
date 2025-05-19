@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { MessageIcon, PhoneIcon } from "@/lib/icons";
 import { useLocation } from "wouter";
+import { Navigation } from "lucide-react";
 
 interface RideConfirmationModalProps {
   onClose: () => void;
@@ -33,8 +34,11 @@ const RideConfirmationModal = ({ onClose }: RideConfirmationModalProps) => {
   };
   
   const handleViewTripStatus = () => {
-    // Navigate to driver tracking page
-    setLocation('/driver-tracking');
+    // Generate a random ride ID for demo purposes
+    const rideId = "RIDE-" + Math.floor(100000 + Math.random() * 900000);
+    
+    // Navigate to Mapbox driver tracking page with the ride ID
+    setLocation(`/mapbox-tracking/${rideId}`);
     onClose();
   };
 
@@ -125,11 +129,24 @@ const RideConfirmationModal = ({ onClose }: RideConfirmationModalProps) => {
           </Button>
         </div>
         
+        {/* Live tracking notification */}
+        <div className="p-4 bg-green-50 rounded-xl mb-4 border border-green-100">
+          <div className="flex items-start">
+            <div className="mr-3 flex-shrink-0">
+              <Navigation className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <h4 className="font-medium text-green-800">Live Tracking Available</h4>
+              <p className="text-sm text-green-700">Track your driver in real-time with our Mapbox integration</p>
+            </div>
+          </div>
+        </div>
+        
         <Button 
           className="w-full py-4 bg-primary rounded-full text-white font-medium"
           onClick={handleViewTripStatus}
         >
-          View Trip Status
+          Track Your Driver
         </Button>
       </div>
     </div>

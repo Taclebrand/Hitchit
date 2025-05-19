@@ -6,6 +6,7 @@ import Auth from "@/pages/Auth";
 import ProfileSetup from "@/pages/ProfileSetup";
 import DriverRegistration from "@/pages/DriverRegistration";
 import DriverTracking from "@/pages/DriverTracking";
+import MapboxDriverTracking from "@/pages/MapboxDriverTracking";
 import RideHistory from "@/pages/RideHistory";
 import RideDetails from "@/pages/RideDetails";
 import ProgressReport from "@/pages/ProgressReport";
@@ -48,6 +49,7 @@ function App() {
         <Route path="/driver-registration" component={DriverRegistration} />
         <Route path="/driver-signup" component={DriverSignup} />
         <Route path="/driver-tracking" component={DriverTracking} />
+        <Route path="/mapbox-tracking/:id" component={MapboxDriverTracking} />
         <Route path="/history" component={RideHistory} />
         <Route path="/ride-details/:id" component={RideDetails} />
         <Route path="/progress" component={ProgressReport} />
