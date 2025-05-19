@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,6 +15,15 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { 
   Tabs, 
@@ -43,11 +52,20 @@ import {
   SuccessIcon,
   StaggeredChildren
 } from "@/components/MicroAnimations";
+import {
+  carMakes,
+  carModelsByMake,
+  defaultModels,
+  yearOptions,
+  carColors,
+  vehicleTypes
+} from "@/lib/vehicle-data";
 
 const vehicleSchema = z.object({
+  type: z.string().min(1, "Vehicle type is required"),
   make: z.string().min(2, "Make is required"),
   model: z.string().min(2, "Model is required"),
-  year: z.coerce.number().min(1980).max(new Date().getFullYear() + 1),
+  year: z.string().min(4, "Year is required"),
   color: z.string().min(2, "Color is required"),
   licensePlate: z.string().min(2, "License plate is required"),
   seats: z.coerce.number().min(1).max(7, "Maximum 7 seats allowed"),
@@ -110,12 +128,28 @@ const DriverSignup = () => {
   const fileInputRefFront = useRef<HTMLInputElement>(null);
   const fileInputRefBack = useRef<HTMLInputElement>(null);
 
+  // State for dynamic vehicle make/model relationship
+  const [selectedMake, setSelectedMake] = useState<string>("");
+  const [availableModels, setAvailableModels] = useState<Array<{value: string, label: string}>>(defaultModels);
+  
+  // Update available models when make changes
+  useEffect(() => {
+    if (selectedMake) {
+      setAvailableModels(carModelsByMake[selectedMake] || defaultModels);
+      // Reset model value when make changes
+      if (vehicleForm.getValues('model')) {
+        vehicleForm.setValue('model', '');
+      }
+    }
+  }, [selectedMake]);
+
   const vehicleForm = useForm<VehicleFormValues>({
     resolver: zodResolver(vehicleSchema),
     defaultValues: {
+      type: "",
       make: "",
       model: "",
-      year: new Date().getFullYear(),
+      year: new Date().getFullYear().toString(),
       color: "",
       licensePlate: "",
       seats: 4,
