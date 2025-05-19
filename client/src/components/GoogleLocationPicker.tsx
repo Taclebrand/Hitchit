@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useGoogleLocation } from '@/hooks/use-google-location';
 import { googleMapsService, Coordinates } from '@/services/GoogleMapsService';
+import { fallbackLocationService } from '@/services/FallbackLocationService';
 import { useToast } from "@/hooks/use-toast";
 import { MapPinIcon, LoaderIcon, Navigation, Search } from 'lucide-react';
 
@@ -86,26 +87,24 @@ export function GoogleLocationPicker({
       return;
     }
 
-    if (!autocompleteService.current) {
-      console.error('Autocomplete service not initialized');
-      return;
-    }
-
     setIsSearching(true);
     try {
-      const result = await autocompleteService.current.getPlacePredictions({
-        input: query
-      });
+      // Use our fallback location service for demo purposes
+      const results = await fallbackLocationService.searchLocation(query);
       
-      if (result.predictions) {
-        setSearchResults(result.predictions.map(prediction => ({
-          placeId: prediction.place_id,
-          description: prediction.description
-        })));
-        setShowSearchResults(true);
-      }
+      setSearchResults(results.map(place => ({
+        placeId: place.placeId,
+        description: place.description
+      })));
+      
+      setShowSearchResults(results.length > 0);
     } catch (error) {
       console.error('Error searching address:', error);
+      toast({
+        title: "Location search error",
+        description: "Could not find locations matching your search",
+        variant: "destructive"
+      });
     } finally {
       setIsSearching(false);
     }
@@ -113,95 +112,94 @@ export function GoogleLocationPicker({
 
   // Handle selection of a place from autocomplete results
   const handlePlaceSelect = async (placeId: string, description: string) => {
-    if (!placesService.current) {
-      console.error('Places service not initialized');
-      return;
-    }
-
     try {
-      const result = await new Promise<google.maps.places.PlaceResult>((resolve, reject) => {
-        placesService.current!.getDetails(
-          { placeId: placeId },
-          (place, status) => {
-            if (status === google.maps.places.PlacesServiceStatus.OK && place) {
-              resolve(place);
-            } else {
-              reject(new Error(`Place details failed: ${status}`));
-            }
-          }
-        );
+      // Use fallback service for demo purposes
+      const details = await fallbackLocationService.getAddressDetails(placeId);
+      
+      onLocationSelect({
+        address: details.address,
+        lat: details.coordinates.lat,
+        lng: details.coordinates.lng,
+        placeId: details.placeId
       });
-
-      if (result.geometry?.location) {
-        const lat = result.geometry.location.lat();
-        const lng = result.geometry.location.lng();
-        
-        onLocationSelect({
-          address: description,
-          lat,
-          lng,
-          placeId
-        });
-        
-        setShowSearchResults(false);
-      }
+      
+      setShowSearchResults(false);
     } catch (error) {
       console.error('Error getting place details:', error);
+      toast({
+        title: "Error selecting location",
+        description: "Could not get details for this location",
+        variant: "destructive"
+      });
     }
   };
 
   // Use current device location
   const handleUseCurrentLocation = async () => {
-    // Manually trigger geolocation API request for real-time location
-    if (navigator.geolocation) {
-      setIsSearching(true);
-      try {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
+    setIsSearching(true);
+    
+    try {
+      // Try to get real location if possible
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0
+            });
           });
-        });
-        
-        const { latitude, longitude } = position.coords;
-        console.log("Current position:", latitude, longitude);
-        
-        // Get address for these coordinates
-        const result = await googleMapsService.getAddressFromCoordinates(latitude, longitude);
-        console.log("Address found:", result.formattedAddress);
-        
-        // Pass to parent component
-        onLocationSelect({
-          address: result.formattedAddress,
-          lat: latitude,
-          lng: longitude,
-          placeId: result.placeId
-        });
-      } catch (error) {
-        console.error("Error getting current location:", error);
-        
-        let errorMessage = "Could not detect your location";
-        if (error instanceof GeolocationPositionError) {
-          if (error.code === error.PERMISSION_DENIED) {
-            errorMessage = "Please enable location permissions in your browser settings";
+          
+          const { latitude, longitude } = position.coords;
+          console.log("Current position:", latitude, longitude);
+          
+          try {
+            // Try using Google Maps service first
+            const result = await googleMapsService.getAddressFromCoordinates(latitude, longitude);
+            
+            // Pass to parent component
+            onLocationSelect({
+              address: result.formattedAddress,
+              lat: latitude,
+              lng: longitude,
+              placeId: result.placeId
+            });
+            
+            setIsSearching(false);
+            return;
+          } catch (addressError) {
+            console.warn("Google Maps geocoding failed, using fallback:", addressError);
+            // Continue to fallback
           }
+        } catch (geoError) {
+          console.warn("Geolocation error, using fallback:", geoError);
+          // Continue to fallback
         }
-        
-        toast({
-          title: "Location error",
-          description: errorMessage,
-          variant: "destructive"
-        });
-      } finally {
-        setIsSearching(false);
       }
-    } else {
+      
+      // Use fallback location for demo - Downtown LA
+      const fallbackLocation = await fallbackLocationService.getAddressDetails("demo-place-id-1");
+      
+      onLocationSelect({
+        address: fallbackLocation.address,
+        lat: fallbackLocation.coordinates.lat,
+        lng: fallbackLocation.coordinates.lng,
+        placeId: fallbackLocation.placeId
+      });
+      
       toast({
-        title: "Location not supported",
-        description: "Your browser doesn't support geolocation",
+        title: "Using Demo Location",
+        description: "We're using a demo location for this feature",
+      });
+    } catch (error) {
+      console.error("Location error:", error);
+      toast({
+        title: "Location error",
+        description: "Could not determine your location",
         variant: "destructive"
       });
+    } finally {
+      setIsSearching(false);
     }
   };
 
