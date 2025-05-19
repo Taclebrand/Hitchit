@@ -542,13 +542,60 @@ const DriverSignup = () => {
                   <AnimatedField delay={0.1}>
                     <FormField
                       control={vehicleForm.control}
+                      name="type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Vehicle Type</FormLabel>
+                          <Select 
+                            onValueChange={field.onChange} 
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select vehicle type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {vehicleTypes.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </AnimatedField>
+
+                  <AnimatedField delay={0.1}>
+                    <FormField
+                      control={vehicleForm.control}
                       name="make"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Make</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Toyota" {...field} />
-                          </FormControl>
+                          <Select 
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              setSelectedMake(value);
+                            }} 
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select make" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {carMakes.map((make) => (
+                                <SelectItem key={make.value} value={make.value}>
+                                  {make.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -562,10 +609,28 @@ const DriverSignup = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Model</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Camry" {...field} />
-                          </FormControl>
+                          <Select 
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            disabled={!selectedMake}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder={selectedMake ? "Select model" : "Select make first"} />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {availableModels.map((model) => (
+                                <SelectItem key={model.value} value={model.value}>
+                                  {model.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
+                          {!selectedMake && (
+                            <p className="text-xs text-muted-foreground">Select make first</p>
+                          )}
                         </FormItem>
                       )}
                     />
@@ -579,9 +644,23 @@ const DriverSignup = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Year</FormLabel>
-                            <FormControl>
-                              <Input type="number" min={1980} max={new Date().getFullYear() + 1} {...field} />
-                            </FormControl>
+                            <Select 
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select year" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {yearOptions.map((year) => (
+                                  <SelectItem key={year.value} value={year.value}>
+                                    {year.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -595,9 +674,23 @@ const DriverSignup = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Color</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Silver" {...field} />
-                            </FormControl>
+                            <Select 
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select color" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {carColors.map((color) => (
+                                  <SelectItem key={color.value} value={color.value}>
+                                    {color.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -626,12 +719,29 @@ const DriverSignup = () => {
                       <FormField
                         control={vehicleForm.control}
                         name="seats"
-                        render={({ field }) => (
+                        render={({ field: { value, onChange, ...rest }}) => (
                           <FormItem>
                             <FormLabel>Available Seats</FormLabel>
-                            <FormControl>
-                              <Input type="number" min={1} max={7} {...field} />
-                            </FormControl>
+                            <Select 
+                              onValueChange={(val) => onChange(parseInt(val))}
+                              value={value?.toString()}
+                              defaultValue="4"
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select seats" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="1">1 seat</SelectItem>
+                                <SelectItem value="2">2 seats</SelectItem>
+                                <SelectItem value="3">3 seats</SelectItem>
+                                <SelectItem value="4">4 seats</SelectItem>
+                                <SelectItem value="5">5 seats</SelectItem>
+                                <SelectItem value="6">6 seats</SelectItem>
+                                <SelectItem value="7">7 seats</SelectItem>
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
