@@ -151,21 +151,34 @@ const DriverSignup = () => {
   // Function to handle selfie capture
   const startCamera = async () => {
     try {
+      // Check if camera is available through navigator.mediaDevices
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Camera API not available in this browser or environment");
+      }
+      
       if (videoRef.current) {
-        // Ask for both video and audio permissions to ensure complete access
+        // Request camera access with standard constraints
         const constraints = { 
-          video: { 
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            facingMode: "user" 
-          }
+          video: true,
+          audio: false
         };
         
         console.log("Requesting camera access...");
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        console.log("Camera access granted:", stream);
         
-        // Ensure the video element is properly set up
+        // Use a timeout to ensure users have time to see the permission dialog
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("Camera access request timed out")), 10000);
+        });
+        
+        // Race between the camera access request and the timeout
+        const stream = await Promise.race([
+          navigator.mediaDevices.getUserMedia(constraints),
+          timeoutPromise
+        ]) as MediaStream;
+        
+        console.log("Camera access granted");
+        
+        // Set up the video element with the stream
         videoRef.current.srcObject = stream;
         videoRef.current.onloadedmetadata = () => {
           videoRef.current?.play().catch(e => console.error("Error playing video:", e));
@@ -174,19 +187,34 @@ const DriverSignup = () => {
         setCameraActive(true);
         toast({
           title: "Camera Active",
-          description: "Your camera is now active. Position your face and click 'Capture Selfie'.",
+          description: "Your camera is now active. Position your face in the frame.",
         });
       }
     } catch (error) {
       console.error("Error accessing camera:", error);
+      
+      // Provide more specific error messages based on the error type
+      let errorMessage = "Could not access your camera.";
+      
+      if (error instanceof DOMException) {
+        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+          errorMessage = "Camera access was denied. Please check your browser permissions.";
+        } else if (error.name === 'NotFoundError') {
+          errorMessage = "No camera device was found on your device.";
+        } else if (error.name === 'NotReadableError') {
+          errorMessage = "Your camera is in use by another application.";
+        } else if (error.name === 'OverconstrainedError') {
+          errorMessage = "Camera constraints specified are not supported by your device.";
+        } else if (error.name === 'SecurityError') {
+          errorMessage = "Camera access was blocked due to security restrictions.";
+        }
+      }
+      
       toast({
-        title: "Camera Error",
-        description: "Could not access your camera. Please ensure camera permissions are granted and you're using a secure connection (HTTPS).",
+        title: "Camera Access Issue",
+        description: errorMessage + " You can upload a photo instead.",
         variant: "destructive",
       });
-      
-      // Fallback option for testing
-      setSelfieImage("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3e%3ccircle cx='100' cy='80' r='50' fill='%23e2e8f0'/%3e%3ccircle cx='100' cy='230' r='100' fill='%23e2e8f0'/%3e%3c/svg%3e");
     }
   };
 
@@ -792,39 +820,69 @@ const DriverSignup = () => {
                         <div className="flex flex-col items-center justify-center h-full">
                           <UserIcon className="w-20 h-20 text-slate-300 mb-2" />
                           <p className="text-sm text-slate-500">
-                            Click "Start Camera" to enable your device camera
+                            Upload a photo or use your camera
                           </p>
                         </div>
                       )}
                     </div>
                     <canvas ref={canvasRef} className="hidden" />
                     
-                    {cameraActive ? (
-                      <Button onClick={captureImage} className="w-full relative animate-pulse bg-green-600 hover:bg-green-700">
-                        <span className="relative z-10 flex items-center justify-center">
-                          <span className="mr-1">📸</span> Capture Selfie
-                        </span>
-                      </Button>
-                    ) : (
-                      <Button 
-                        onClick={() => {
-                          toast({
-                            title: "Starting Camera",
-                            description: "Please allow camera access when prompted by your browser",
-                          });
-                          setTimeout(() => startCamera(), 500);
-                        }} 
-                        className="w-full flex items-center justify-center"
-                      >
-                        <span className="mr-2">🎥</span> Start Camera
-                      </Button>
-                    )}
-                    
-                    <p className="text-xs text-slate-500 mt-2">
-                      {cameraActive 
-                        ? "Position your face within the frame and click capture" 
-                        : "Please allow camera access when prompted"}
-                    </p>
+                    <div className="flex flex-col gap-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        {cameraActive ? (
+                          <Button onClick={captureImage} className="w-full relative bg-green-600 hover:bg-green-700">
+                            <span className="relative z-10 flex items-center justify-center">
+                              <span className="mr-1">📸</span> Capture
+                            </span>
+                          </Button>
+                        ) : (
+                          <Button 
+                            onClick={() => {
+                              toast({
+                                title: "Starting Camera",
+                                description: "Please allow camera access when prompted by your browser",
+                              });
+                              setTimeout(() => startCamera(), 500);
+                            }} 
+                            className="w-full flex items-center justify-center"
+                          >
+                            <span className="mr-2">🎥</span> Use Camera
+                          </Button>
+                        )}
+                        
+                        <div className="relative">
+                          <input
+                            type="file"
+                            id="selfieUpload"
+                            accept="image/*"
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                            onChange={(e) => {
+                              const files = e.target.files;
+                              if (files && files.length > 0) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setSelfieImage(reader.result as string);
+                                  toast({
+                                    title: "Photo Uploaded",
+                                    description: "Your photo has been successfully uploaded.",
+                                  });
+                                };
+                                reader.readAsDataURL(files[0]);
+                              }
+                            }}
+                          />
+                          <Button variant="outline" className="w-full flex items-center justify-center">
+                            <span className="mr-1">📎</span> Upload Photo
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <p className="text-xs text-slate-500 mt-2 text-center">
+                        {cameraActive 
+                          ? "Position your face within the frame and click capture" 
+                          : "You can either use your camera or upload a photo for verification"}
+                      </p>
+                    </div>
                   </>
                 ) : (
                   <>
