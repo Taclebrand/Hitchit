@@ -7,6 +7,7 @@ import { LocationPicker } from "@/components/LocationPicker";
 import { GoogleLocationPicker } from "@/components/GoogleLocationPicker";
 import { GoogleMapDisplay } from "@/components/GoogleMapDisplay";
 import { googleMapsService } from "@/services/GoogleMapsService";
+import { fallbackLocationService } from "@/services/FallbackLocationService";
 import { useToast } from "@/hooks/use-toast";
 import { MapPinIcon, Navigation, Clock, DollarSign } from "lucide-react";
 
@@ -90,16 +91,27 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
       if (currentLocation.lat && currentLocation.lng && destination.lat && destination.lng) {
         try {
           // Get route from Google Maps service
-          const route = await googleMapsService.getRoute(
-            { lat: currentLocation.lat, lng: currentLocation.lng },
-            { lat: destination.lat, lng: destination.lng }
-          );
+          // Try using Google Maps first, fall back to our backup service if needed
+      let route;
+      try {
+        route = await googleMapsService.getRoute(
+          { lat: currentLocation.lat, lng: currentLocation.lng },
+          { lat: destination.lat, lng: destination.lng }
+        );
+      } catch (error) {
+        console.warn("Google Maps route failed, using fallback service:", error);
+        // Use fallback service
+        route = await fallbackLocationService.getRoute(
+          { lat: currentLocation.lat, lng: currentLocation.lng },
+          { lat: destination.lat, lng: destination.lng }
+        );
+      }
           
-          // Calculate fare based on distance and selected ride type
-          const fare = googleMapsService.calculateFareEstimate(
-            route.distance.value,
-            selectedRideType
-          );
+      // Calculate fare based on distance and selected ride type
+      const fare = fallbackLocationService.calculateFareEstimate(
+        route.distance.value,
+        selectedRideType
+      );
           
           // Update route info state
           setRouteInfo({
