@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarIcon, Car, MapPin, DollarSign, Users } from "lucide-react";
+import { fallbackLocationService } from "@/services/FallbackLocationService";
 
 const createTripSchema = z.object({
   vehicleId: z.coerce.number().positive("Vehicle ID is required"),
@@ -119,25 +120,78 @@ const CreateTrip = () => {
     }
   };
 
-  // Use a mock function to get current location
-  const getCurrentLocation = () => {
-    // In a real implementation, we would use the browser's geolocation API
-    const mockLocation = {
-      lat: 34.0522,
-      lng: -118.2437,
-      address: "123 Main St, Los Angeles, CA",
-      city: "Los Angeles"
-    };
+  // Get current location using the browser's geolocation API and our fallback service
+  const getCurrentLocation = async () => {
+    setIsLoading(true);
     
-    form.setValue("originLat", mockLocation.lat);
-    form.setValue("originLng", mockLocation.lng);
-    form.setValue("originAddress", mockLocation.address);
-    form.setValue("originCity", mockLocation.city);
-    
-    toast({
-      title: "Location Set",
-      description: "Current location has been set as the origin",
-    });
+    try {
+      // Try to get real location first
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0
+            });
+          });
+          
+          const { latitude, longitude } = position.coords;
+          console.log("Got coordinates:", latitude, longitude);
+          
+          try {
+            // Get address details from coordinates
+            const addressDetails = await fallbackLocationService.getAddressFromCoordinates(latitude, longitude);
+            
+            // Extract city from address
+            const addressParts = addressDetails.formattedAddress.split(',');
+            const city = addressParts.length > 1 ? addressParts[1].trim() : addressParts[0].trim();
+            
+            form.setValue("originLat", latitude);
+            form.setValue("originLng", longitude);
+            form.setValue("originAddress", addressDetails.formattedAddress);
+            form.setValue("originCity", city);
+            
+            toast({
+              title: "Location Set",
+              description: "Your current location has been set as the origin",
+            });
+            
+            return;
+          } catch (error) {
+            console.warn("Error getting address from coordinates:", error);
+            // Continue to fallback
+          }
+        } catch (error) {
+          console.warn("Geolocation error:", error);
+          // Continue to fallback
+        }
+      }
+      
+      // Use fallback location if geolocation failed
+      const location = await fallbackLocationService.getAddressDetails('demo-place-id-1');
+      const city = location.address.split(',')[0].trim();
+      
+      form.setValue("originLat", location.coordinates.lat);
+      form.setValue("originLng", location.coordinates.lng);
+      form.setValue("originAddress", location.address);
+      form.setValue("originCity", city);
+      
+      toast({
+        title: "Demo Location Set",
+        description: "A demo location has been set as the origin",
+      });
+      
+    } catch (error) {
+      console.error("Error setting location:", error);
+      toast({
+        title: "Error",
+        description: "Failed to set your location. Please enter it manually.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

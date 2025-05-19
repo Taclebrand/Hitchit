@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { googleMapsService, Coordinates } from '@/services/GoogleMapsService';
+import { fallbackLocationService } from '@/services/FallbackLocationService';
 import { LoaderIcon, MapPin, Navigation } from 'lucide-react';
 
 interface GoogleMapDisplayProps {
