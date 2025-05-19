@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import SuggestedLocation from "@/components/SuggestedLocation";
 import RideOption from "@/components/RideOption";
 import { LocationPicker } from "@/components/LocationPicker";
+import { GoogleLocationPicker } from "@/components/GoogleLocationPicker";
 import { useToast } from "@/hooks/use-toast";
 import { MapPinIcon, Navigation } from "lucide-react";
 
@@ -117,7 +118,8 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
           </div>
         ) : (
           <div className="mb-3">
-            <LocationPicker 
+            {/* Use the Google Location Picker for a more robust experience */}
+            <GoogleLocationPicker 
               onLocationSelect={handleLocationSelect}
               label="Pickup Location"
               buttonText="Use My Current Location"
@@ -150,7 +152,8 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
           </div>
         ) : (
           <div>
-            <LocationPicker 
+            {/* Use the Google Location Picker for destination as well */}
+            <GoogleLocationPicker 
               onLocationSelect={handleDestinationSelect}
               label="Destination"
               buttonText="Set As Destination"
