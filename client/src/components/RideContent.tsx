@@ -5,8 +5,10 @@ import SuggestedLocation from "@/components/SuggestedLocation";
 import RideOption from "@/components/RideOption";
 import { LocationPicker } from "@/components/LocationPicker";
 import { GoogleLocationPicker } from "@/components/GoogleLocationPicker";
+import { GoogleMapDisplay } from "@/components/GoogleMapDisplay";
+import { googleMapsService } from "@/services/GoogleMapsService";
 import { useToast } from "@/hooks/use-toast";
-import { MapPinIcon, Navigation } from "lucide-react";
+import { MapPinIcon, Navigation, Clock, DollarSign } from "lucide-react";
 
 interface RideContentProps {
   onBookRide: () => void;
@@ -33,6 +35,11 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
   const [selectedRideType, setSelectedRideType] = useState("economy");
   const [showPickupLocationPicker, setShowPickupLocationPicker] = useState(false);
   const [showDestinationPicker, setShowDestinationPicker] = useState(false);
+  const [routeInfo, setRouteInfo] = useState<{
+    distance: string;
+    duration: string;
+    fare: number;
+  } | null>(null);
 
   const savedLocations = [
     { id: 1, name: "Office", address: "456 Business Ave", icon: "building" },
@@ -77,11 +84,51 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
     setSelectedRideType(id);
   };
 
+  useEffect(() => {
+    // Calculate route info when both locations are set
+    const calculateRouteInfo = async () => {
+      if (currentLocation.lat && currentLocation.lng && destination.lat && destination.lng) {
+        try {
+          // Get route from Google Maps service
+          const route = await googleMapsService.getRoute(
+            { lat: currentLocation.lat, lng: currentLocation.lng },
+            { lat: destination.lat, lng: destination.lng }
+          );
+          
+          // Calculate fare based on distance and selected ride type
+          const fare = googleMapsService.calculateFareEstimate(
+            route.distance.value,
+            selectedRideType
+          );
+          
+          // Update route info state
+          setRouteInfo({
+            distance: route.distance.text,
+            duration: route.duration.text,
+            fare: fare
+          });
+        } catch (error) {
+          console.error("Error calculating route info:", error);
+          toast({
+            title: "Route Calculation Failed",
+            description: "Could not calculate trip information. Please try again.",
+            variant: "destructive"
+          });
+        }
+      } else {
+        // Reset route info if locations are not complete
+        setRouteInfo(null);
+      }
+    };
+    
+    calculateRouteInfo();
+  }, [currentLocation, destination, selectedRideType, toast]);
+
   const handleLocationSelect = (location: {address: string, lat: number, lng: number}) => {
     setCurrentLocation(location);
     setShowPickupLocationPicker(false);
     toast({
-      title: "Location Updated",
+      title: "Pickup Location Updated",
       description: "Your pickup location has been set to your current location.",
     });
   };
@@ -186,6 +233,40 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
         </div>
       </div>
 
+      {/* Map Display - Show when both pickup and destination are selected */}
+      {currentLocation.lat && currentLocation.lng && destination.lat && destination.lng && (
+        <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
+          <h3 className="font-semibold mb-3">Your Route</h3>
+          <GoogleMapDisplay 
+            originCoordinates={{ lat: currentLocation.lat, lng: currentLocation.lng }}
+            destinationCoordinates={{ lat: destination.lat, lng: destination.lng }}
+            height="240px"
+            className="mb-3"
+          />
+          
+          {/* Route Information */}
+          {routeInfo && (
+            <div className="grid grid-cols-3 gap-2 mt-3">
+              <div className="bg-slate-50 p-3 rounded-lg flex flex-col items-center justify-center">
+                <Clock className="h-4 w-4 text-primary mb-1" />
+                <span className="text-xs text-slate-500">Duration</span>
+                <span className="font-semibold">{routeInfo.duration}</span>
+              </div>
+              <div className="bg-slate-50 p-3 rounded-lg flex flex-col items-center justify-center">
+                <MapPinIcon className="h-4 w-4 text-primary mb-1" />
+                <span className="text-xs text-slate-500">Distance</span>
+                <span className="font-semibold">{routeInfo.distance}</span>
+              </div>
+              <div className="bg-slate-50 p-3 rounded-lg flex flex-col items-center justify-center">
+                <DollarSign className="h-4 w-4 text-primary mb-1" />
+                <span className="text-xs text-slate-500">Fare</span>
+                <span className="font-semibold">${routeInfo.fare.toFixed(2)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Ride Types */}
       <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
         <h3 className="font-semibold mb-3">Select Ride Type</h3>
@@ -195,7 +276,7 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
               key={type.id}
               id={type.id}
               name={type.name}
-              price={type.price}
+              price={routeInfo ? routeInfo.fare : type.price}
               time={type.time}
               icon={type.icon}
               selected={selectedRideType === type.id}
@@ -210,8 +291,12 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
         <Button 
           className="w-full py-4 bg-primary rounded-full text-white font-medium shadow-lg"
           onClick={onBookRide}
+          disabled={!currentLocation.lat || !destination.lat}
         >
-          Book Ride Now
+          {!currentLocation.lat || !destination.lat 
+            ? "Enter Pickup & Destination" 
+            : `Book ${selectedRideType.charAt(0).toUpperCase() + selectedRideType.slice(1)} Ride${routeInfo ? ` • $${routeInfo.fare.toFixed(2)}` : ""}`
+          }
         </Button>
       </div>
     </div>
