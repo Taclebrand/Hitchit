@@ -1,17 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import SuggestedLocation from "@/components/SuggestedLocation";
 import RideOption from "@/components/RideOption";
+import { LocationPicker } from "@/components/LocationPicker";
+import { useToast } from "@/hooks/use-toast";
+import { MapPinIcon, Navigation } from "lucide-react";
 
 interface RideContentProps {
   onBookRide: () => void;
 }
 
+interface Location {
+  address: string;
+  lat?: number;
+  lng?: number;
+}
+
 const RideContent = ({ onBookRide }: RideContentProps) => {
-  const [currentLocation, setCurrentLocation] = useState("123 Main St");
-  const [destination, setDestination] = useState("");
+  const { toast } = useToast();
+  const [currentLocation, setCurrentLocation] = useState<Location>({
+    address: "",
+    lat: undefined,
+    lng: undefined
+  });
+  const [destination, setDestination] = useState<Location>({
+    address: "",
+    lat: undefined,
+    lng: undefined
+  });
   const [selectedRideType, setSelectedRideType] = useState("economy");
+  const [showPickupLocationPicker, setShowPickupLocationPicker] = useState(false);
+  const [showDestinationPicker, setShowDestinationPicker] = useState(false);
 
   const savedLocations = [
     { id: 1, name: "Office", address: "456 Business Ave", icon: "building" },
@@ -43,12 +63,35 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
     }
   ];
 
-  const handleSelectLocation = (location: { name: string, address: string }) => {
-    setDestination(location.address);
+  const handleSelectSavedLocation = (location: { name: string, address: string }) => {
+    setDestination({
+      address: location.address,
+      lat: undefined,
+      lng: undefined
+    });
+    setShowDestinationPicker(false);
   };
 
   const handleSelectRideType = (id: string) => {
     setSelectedRideType(id);
+  };
+
+  const handleLocationSelect = (location: {address: string, lat: number, lng: number}) => {
+    setCurrentLocation(location);
+    setShowPickupLocationPicker(false);
+    toast({
+      title: "Location Updated",
+      description: "Your pickup location has been set to your current location.",
+    });
+  };
+
+  const handleDestinationSelect = (location: {address: string, lat: number, lng: number}) => {
+    setDestination(location);
+    setShowDestinationPicker(false);
+    toast({
+      title: "Destination Updated",
+      description: "Your destination has been set.",
+    });
   };
 
   return (
@@ -56,30 +99,72 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
       {/* Location Form */}
       <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
         <h3 className="font-semibold mb-3">Where are you going?</h3>
-        <div className="flex items-center mb-3">
-          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mr-3">
-            <div className="w-3 h-3 bg-primary rounded-full"></div>
+        
+        {!showPickupLocationPicker ? (
+          <div className="flex items-center mb-3">
+            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mr-3">
+              <div className="w-3 h-3 bg-primary rounded-full"></div>
+            </div>
+            <div 
+              className="flex-1 py-2 px-3 bg-neutral-50 rounded-lg border border-neutral-200 flex justify-between items-center cursor-pointer"
+              onClick={() => setShowPickupLocationPicker(true)}
+            >
+              <span className={`${!currentLocation.address ? 'text-gray-400' : ''}`}>
+                {currentLocation.address || "Set your pickup location"}
+              </span>
+              <Navigation className="h-4 w-4 text-primary" />
+            </div>
           </div>
-          <Input
-            type="text"
-            placeholder="Current location"
-            className="flex-1 py-2 px-3 bg-neutral-50 rounded-lg border border-neutral-200"
-            value={currentLocation}
-            onChange={(e) => setCurrentLocation(e.target.value)}
-          />
-        </div>
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-secondary/20 rounded-full flex items-center justify-center mr-3">
-            <div className="w-3 h-3 bg-secondary rounded-full"></div>
+        ) : (
+          <div className="mb-3">
+            <LocationPicker 
+              onLocationSelect={handleLocationSelect}
+              label="Pickup Location"
+              buttonText="Use My Current Location"
+            />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => setShowPickupLocationPicker(false)}
+            >
+              Cancel
+            </Button>
           </div>
-          <Input
-            type="text"
-            placeholder="Enter destination"
-            className="flex-1 py-2 px-3 bg-neutral-50 rounded-lg border border-neutral-200"
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
-          />
-        </div>
+        )}
+        
+        {!showDestinationPicker ? (
+          <div className="flex items-center">
+            <div className="w-8 h-8 bg-secondary/20 rounded-full flex items-center justify-center mr-3">
+              <div className="w-3 h-3 bg-secondary rounded-full"></div>
+            </div>
+            <div 
+              className="flex-1 py-2 px-3 bg-neutral-50 rounded-lg border border-neutral-200 flex justify-between items-center cursor-pointer"
+              onClick={() => setShowDestinationPicker(true)}
+            >
+              <span className={`${!destination.address ? 'text-gray-400' : ''}`}>
+                {destination.address || "Where to?"}
+              </span>
+              <MapPinIcon className="h-4 w-4 text-secondary" />
+            </div>
+          </div>
+        ) : (
+          <div>
+            <LocationPicker 
+              onLocationSelect={handleDestinationSelect}
+              label="Destination"
+              buttonText="Set As Destination"
+            />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => setShowDestinationPicker(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Suggested Locations */}
@@ -92,7 +177,7 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
               name={location.name}
               address={location.address}
               icon={location.icon}
-              onClick={() => handleSelectLocation(location)}
+              onClick={() => handleSelectSavedLocation(location)}
             />
           ))}
         </div>
