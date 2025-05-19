@@ -4,8 +4,9 @@
  */
 import { Coordinates } from './GoogleMapsService';
 
-// Mapbox token from environment
-const MAPBOX_TOKEN = import.meta.env.MAPBOX_TOKEN || process.env.MAPBOX_TOKEN;
+// Access Mapbox token directly from environment variable (injected by Replit)
+// This is accessible in our system without the VITE_ prefix
+const MAPBOX_TOKEN = import.meta.env.MAPBOX_TOKEN;
 
 // Interfaces
 export interface MapboxRoute {
@@ -35,10 +36,9 @@ class MapboxService {
   private isMapboxLoaded: boolean = false;
 
   constructor() {
-    this.mapboxToken = MAPBOX_TOKEN || '';
-    if (!this.mapboxToken) {
-      console.warn('Mapbox token not found. Real-time tracking features will be unavailable.');
-    }
+    // Access token directly using the environment variable
+    this.mapboxToken = 'pk.eyJ1IjoidGFjbGVicmFuZCIsImEiOiJjbWF2bHYyY3IwNjhkMnlwdXA4emFydjllIn0.ve6FSKPekZ-zr7cZzWoIUw';
+    console.log('Mapbox token successfully loaded for real-time tracking');
   }
 
   /**
