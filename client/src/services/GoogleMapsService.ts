@@ -21,7 +21,7 @@ export interface RouteInfo {
     text: string;
     value: number; // seconds
   };
-  encodedPolyline: string;
+  encodedPolyline: any; // Can be string or object with points property
 }
 
 class GoogleMapsService {
@@ -177,7 +177,9 @@ class GoogleMapsService {
           text: leg.duration?.text || '0 mins',
           value: leg.duration?.value || 0
         },
-        encodedPolyline: route.overview_polyline
+        encodedPolyline: typeof route.overview_polyline === 'string' 
+          ? route.overview_polyline 
+          : route.overview_polyline.points
       };
     } catch (error) {
       console.error('Error getting route:', error);
