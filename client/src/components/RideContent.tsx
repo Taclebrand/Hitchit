@@ -9,7 +9,8 @@ import { GoogleMapDisplay } from "@/components/GoogleMapDisplay";
 import { googleMapsService } from "@/services/GoogleMapsService";
 import { fallbackLocationService } from "@/services/FallbackLocationService";
 import { useToast } from "@/hooks/use-toast";
-import { MapPinIcon, Navigation, Clock, DollarSign } from "lucide-react";
+import { MapPinIcon, Navigation, Clock, DollarSign, CheckCircle } from "lucide-react";
+import { AddressVerificationModal } from "@/components/AddressVerificationModal";
 
 interface RideContentProps {
   onBookRide: () => void;
@@ -36,6 +37,8 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
   const [selectedRideType, setSelectedRideType] = useState("economy");
   const [showPickupLocationPicker, setShowPickupLocationPicker] = useState(false);
   const [showDestinationPicker, setShowDestinationPicker] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [locationToVerify, setLocationToVerify] = useState<{type: 'pickup' | 'destination', location: Location} | null>(null);
   const [routeInfo, setRouteInfo] = useState<{
     distance: string;
     duration: string;
@@ -189,15 +192,23 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
             const formattedAddress = data.features[0].place_name;
             console.log("Found street address:", formattedAddress);
             
-            setCurrentLocation({
+            // Create location object
+            const locationObj = {
               address: formattedAddress,
               lat: latitude,
               lng: longitude
+            };
+            
+            // Show verification modal instead of setting directly
+            setLocationToVerify({
+              type: 'pickup',
+              location: locationObj
             });
+            setShowVerificationModal(true);
             
             toast({
-              title: "Street Address Found",
-              description: "Using your exact street address"
+              title: "Address Found",
+              description: "Please verify your location"
             });
           } else {
             throw new Error('No address found in API response');
