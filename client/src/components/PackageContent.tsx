@@ -57,30 +57,58 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
     setSelectedDeliveryOption(id);
   };
   
-  // Helper function to fetch the address from coordinates
+  // Helper function to fetch the address from coordinates 
   const fetchAddressFromCoordinates = async (latitude: number, longitude: number): Promise<string> => {
-    // Attempt to use an external geocoding service to get the address
+    // Use the Mapbox service directly
     try {
-      // Prepare a request to a geocoding API
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${process.env.MAPBOX_TOKEN || import.meta.env.VITE_MAPBOX_TOKEN}`;
+      // Request the location details from Mapbox
+      const token = mapboxService.getToken();
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}`;
       
+      console.log("Fetching address from coordinates using Mapbox...");
       const response = await fetch(url);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch address data');
+        throw new Error('Mapbox geocoding request failed');
       }
       
       const data = await response.json();
+      console.log("Geocoding response:", data);
       
       if (data.features && data.features.length > 0) {
-        // Return the formatted place name
+        // Return the formatted place name which includes the full address
         return data.features[0].place_name;
       } else {
-        throw new Error('No address found for these coordinates');
+        throw new Error('No address found for coordinates');
       }
     } catch (error) {
-      console.error('Error fetching address:', error);
-      // If the API call fails, return a formatted address string
-      return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}, Richmond, TX`;
+      console.error('Error getting physical address:', error);
+      
+      // Create a formatted address using nearby Texas cities based on the coordinates
+      const texasCities = [
+        { name: "Richmond", lat: 29.5822, lng: -95.7608 },
+        { name: "Sugar Land", lat: 29.6197, lng: -95.6349 },
+        { name: "Katy", lat: 29.7858, lng: -95.8245 },
+        { name: "Rosenberg", lat: 29.5572, lng: -95.8085 }
+      ];
+      
+      // Find the closest city
+      let closestCity = texasCities[0];
+      let shortestDistance = Number.MAX_VALUE;
+      
+      texasCities.forEach(city => {
+        const distance = Math.sqrt(
+          Math.pow(city.lat - latitude, 2) + 
+          Math.pow(city.lng - longitude, 2)
+        );
+        
+        if (distance < shortestDistance) {
+          closestCity = city;
+          shortestDistance = distance;
+        }
+      });
+      
+      return `Near ${closestCity.name}, TX ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
     }
   };
   
