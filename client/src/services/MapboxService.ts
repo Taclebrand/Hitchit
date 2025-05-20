@@ -4,9 +4,9 @@
  */
 import { Coordinates } from './GoogleMapsService';
 
-// Access Mapbox token directly from environment variable (injected by Replit)
-// This is accessible in our system without the VITE_ prefix
+// Access Mapbox token from environment variables
 const MAPBOX_TOKEN = import.meta.env.MAPBOX_TOKEN;
+console.log("Mapbox token found:", MAPBOX_TOKEN ? "Yes" : "No");
 
 // Interfaces
 export interface MapboxRoute {
@@ -36,8 +36,8 @@ class MapboxService {
   private isMapboxLoaded: boolean = false;
 
   constructor() {
-    // Use the environment variable from Replit
-    this.mapboxToken = import.meta.env.MAPBOX_TOKEN || '';
+    // Get the token from the environment variables
+    this.mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN || '';
     
     if (!this.mapboxToken) {
       console.warn('No Mapbox token found in environment variables, using fallback token');
@@ -47,6 +47,8 @@ class MapboxService {
     
     console.log('Mapbox token successfully loaded for real-time tracking');
   }
+  
+
 
   /**
    * Loads the Mapbox GL JS library
