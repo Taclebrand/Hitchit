@@ -89,12 +89,7 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
       
       // Show success indicator with check mark
       toast({
-        title: (
-          <span className="flex items-center gap-1">
-            <CheckCircle className="h-4 w-4 text-green-500" />
-            Location Verified
-          </span>
-        ),
+        title: "Location Verified ✓",
         description: "Your location has been confirmed"
       });
     }

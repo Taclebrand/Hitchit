@@ -33,16 +33,11 @@ export const AddressVerificationModal: React.FC<AddressVerificationModalProps> =
   const handleConfirm = () => {
     setIsVerifying(true);
     
-    // Simulate verification process
+    // Confirm immediately
     setTimeout(() => {
       setIsVerifying(false);
       onConfirm();
-      
-      toast({
-        title: "Address verified",
-        description: "Your location has been confirmed",
-      });
-    }, 1000);
+    }, 500);
   };
   
   return (
