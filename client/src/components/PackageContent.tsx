@@ -98,15 +98,26 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
           
           console.log("Getting your exact street address...");
           try {
-            // Get your real street address from Mapbox
-            const formattedAddress = await fetchAddressFromCoordinates(latitude, longitude);
-            console.log("Found address:", formattedAddress);
-            setPickupAddress(formattedAddress);
+            // Direct call to Google Maps Geocoding API to get real street address
+            const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+            const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`;
             
-            toast({
-              title: "Address Found",
-              description: "Using your street address for pickup",
-            });
+            const response = await fetch(geocodingUrl);
+            const data = await response.json();
+            
+            if (data.status === 'OK' && data.results && data.results.length > 0) {
+              // Get the formatted address from the Google API response
+              const formattedAddress = data.results[0].formatted_address;
+              console.log("Found address:", formattedAddress);
+              setPickupAddress(formattedAddress);
+              
+              toast({
+                title: "Street Address Found",
+                description: "Using your exact street address for pickup",
+              });
+            } else {
+              throw new Error('No address found in API response');
+            }
           } catch (error) {
             // If the street address lookup fails, let the user know
             console.error("Could not get street address:", error);

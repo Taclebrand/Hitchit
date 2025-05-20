@@ -175,19 +175,30 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
         console.log("Got real location coordinates:", latitude, longitude);
         
         try {
-          // Try to get a real address using Google Maps
-          const locationResult = await googleMapsService.getAddressFromCoordinates(latitude, longitude);
+          // Direct Google Maps Geocoding API call to get real address
+          const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+          const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`;
           
-          setCurrentLocation({
-            address: locationResult.formattedAddress,
-            lat: latitude,
-            lng: longitude
-          });
+          const response = await fetch(geocodingUrl);
+          const data = await response.json();
           
-          toast({
-            title: "Location found",
-            description: "Using your current street address"
-          });
+          if (data.status === 'OK' && data.results && data.results.length > 0) {
+            // Get the formatted address from the Google API response
+            const formattedAddress = data.results[0].formatted_address;
+            
+            setCurrentLocation({
+              address: formattedAddress,
+              lat: latitude,
+              lng: longitude
+            });
+            
+            toast({
+              title: "Street Address Found",
+              description: "Using your exact street address"
+            });
+          } else {
+            throw new Error('No address found in API response');
+          }
         } catch (error) {
           console.error("Failed to get street address:", error);
           
