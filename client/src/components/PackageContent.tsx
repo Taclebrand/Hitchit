@@ -99,7 +99,9 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
           console.log("Getting your exact street address...");
           try {
             // Direct call to Mapbox Geocoding API to get real street address
-            const mapboxToken = import.meta.env.MAPBOX_TOKEN;
+            // Use the fallback token directly
+            const mapboxToken = 'pk.eyJ1IjoidGFjbGVicmFuZCIsImEiOiJjbWF2bHYyY3IwNjhkMnlwdXA4emFydjllIn0.ve6FSKPekZ-zr7cZzWoIUw';
+            console.log("Using mapbox token for direct geocoding in package content");
             const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&types=address`;
             
             const response = await fetch(geocodingUrl);
