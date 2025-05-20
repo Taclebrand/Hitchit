@@ -119,6 +119,40 @@ class MapboxService {
   }
   
   /**
+   * Get a real street address from coordinates using Mapbox's Geocoding API
+   */
+  async getReverseGeocode(coordinates: Coordinates): Promise<string> {
+    try {
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${coordinates.lng},${coordinates.lat}.json?access_token=${this.mapboxToken}&types=address`;
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Mapbox geocoding error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.features && data.features.length > 0) {
+        // Return the most precise address (first result)
+        return data.features[0].place_name;
+      } else {
+        throw new Error('No address found');
+      }
+    } catch (error) {
+      console.error('Error getting address from coordinates:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Get the Mapbox token for use in other services
+   */
+  getToken(): string {
+    return this.mapboxToken;
+  }
+  
+  /**
    * Generate a simulated route between points when the API is unavailable
    * This ensures the app works for demos without requiring valid API keys
    */
