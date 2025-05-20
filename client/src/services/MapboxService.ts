@@ -36,13 +36,15 @@ class MapboxService {
   private isMapboxLoaded: boolean = false;
 
   constructor() {
-    // Get the token from the environment variables
-    this.mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN || '';
+    // Get the token from the environment variables - try multiple possible environment variable names
+    this.mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN || 
+                      import.meta.env.MAPBOX_TOKEN || '';
     
+    // If token is still empty, ask user to provide one
     if (!this.mapboxToken) {
-      console.warn('No Mapbox token found in environment variables, using fallback token');
-      // Fallback for demo purposes only
-      this.mapboxToken = 'pk.eyJ1IjoidGFjbGVicmFuZCIsImEiOiJjbWF2bHYyY3IwNjhkMnlwdXA4emFydjllIn0.ve6FSKPekZ-zr7cZzWoIUw';
+      console.warn('No Mapbox token found in environment variables');
+      // We'll rely on the provided token in environment variables
+      throw new Error('Mapbox token is required for address lookup');
     }
     
     console.log('Mapbox token successfully loaded for real-time tracking');
