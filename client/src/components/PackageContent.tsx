@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +10,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import DeliveryOption from "@/components/DeliveryOption";
+import { useToast } from "@/hooks/use-toast";
+import { fallbackLocationService } from "@/services/FallbackLocationService";
+import { mapboxService } from "@/services/MapboxService";
 
 interface PackageContentProps {
   onSendPackage: () => void;
@@ -22,6 +25,8 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
   const [packageWeight, setPackageWeight] = useState("up-to-5-lbs");
   const [contentsDescription, setContentsDescription] = useState("");
   const [selectedDeliveryOption, setSelectedDeliveryOption] = useState("standard");
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const { toast } = useToast();
 
   const deliveryOptions = [
     { 
@@ -50,6 +55,64 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
   const handleSelectDeliveryOption = (id: string) => {
     setSelectedDeliveryOption(id);
   };
+  
+  // Get user's current location for pickup
+  const getPickupLocation = async () => {
+    setIsLoadingLocation(true);
+    
+    try {
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0
+            });
+          });
+          
+          const { latitude, longitude } = position.coords;
+          console.log("Got coordinates for package pickup:", latitude, longitude);
+          
+          try {
+            // Get address details from coordinates
+            const addressDetails = await fallbackLocationService.getAddressFromCoordinates(latitude, longitude);
+            setPickupAddress(addressDetails.formattedAddress);
+            
+            toast({
+              title: "Location Set",
+              description: "Your current location will be used for pickup",
+            });
+          } catch (error) {
+            console.warn("Error getting address details:", error);
+            setPickupAddress(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+            
+            toast({
+              title: "Location Set",
+              description: "Using coordinates for pickup location",
+            });
+          }
+        } catch (error) {
+          console.warn("Geolocation error:", error);
+          toast({
+            title: "Location error",
+            description: "Could not get your location. Please enter it manually.",
+            variant: "destructive"
+          });
+        }
+      } else {
+        toast({
+          title: "Not supported",
+          description: "Your browser doesn't support geolocation",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error setting pickup location:", error);
+    } finally {
+      setIsLoadingLocation(false);
+    }
+  };
 
   return (
     <div className="p-4">
@@ -59,6 +122,18 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
         
         {/* Pickup Location */}
         <p className="mb-2 text-sm font-medium text-neutral-600">Pickup From</p>
+        <div className="mb-1">
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm"
+            className="w-full mb-2"
+            onClick={getPickupLocation}
+            disabled={isLoadingLocation}
+          >
+            {isLoadingLocation ? "Getting location..." : "Use Current Location"}
+          </Button>
+        </div>
         <div className="flex items-center mb-3">
           <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mr-3">
             <div className="w-3 h-3 bg-primary rounded-full"></div>
