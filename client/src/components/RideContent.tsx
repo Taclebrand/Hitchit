@@ -199,8 +199,8 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
         
         try {
           // Direct call to Mapbox Geocoding API to get real street address
-          // Use the fallback token from the MapboxService class
-          const mapboxToken = 'pk.eyJ1IjoidGFjbGVicmFuZCIsImEiOiJjbWF2bHYyY3IwNjhkMnlwdXA4emFydjllIn0.ve6FSKPekZ-zr7cZzWoIUw';
+          // Use the environment token
+          const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN || import.meta.env.MAPBOX_TOKEN;
           console.log("Using mapbox token for direct geocoding");
           const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&types=address`;
           
