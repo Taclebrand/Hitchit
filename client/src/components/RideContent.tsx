@@ -153,6 +153,72 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
       description: "Your destination has been set.",
     });
   };
+  
+  // Get the user's current location as pickup point
+  const getCurrentLocation = async () => {
+    try {
+      if (navigator.geolocation) {
+        toast({
+          title: "Getting location",
+          description: "Finding your current location..."
+        });
+        
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
+        });
+        
+        const { latitude, longitude } = position.coords;
+        console.log("Got real location coordinates:", latitude, longitude);
+        
+        try {
+          // Try to get a real address using Google Maps
+          const locationResult = await googleMapsService.getAddressFromCoordinates(latitude, longitude);
+          
+          setCurrentLocation({
+            address: locationResult.formattedAddress,
+            lat: latitude,
+            lng: longitude
+          });
+          
+          toast({
+            title: "Location found",
+            description: "Using your current street address"
+          });
+        } catch (error) {
+          console.error("Failed to get street address:", error);
+          
+          // If we can't get a street address, just format the coordinates nicely
+          setCurrentLocation({
+            address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+            lat: latitude,
+            lng: longitude
+          });
+          
+          toast({
+            title: "Location found",
+            description: "Using your current coordinates"
+          });
+        }
+      } else {
+        toast({
+          title: "Not supported",
+          description: "Your browser doesn't support geolocation",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Geolocation error:", error);
+      toast({
+        title: "Location error",
+        description: "Couldn't get your location. Please enter it manually.",
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
     <div className="p-4">
@@ -160,39 +226,58 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
       <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
         <h3 className="font-semibold mb-3">Where are you going?</h3>
         
-        {!showPickupLocationPicker ? (
-          <div className="flex items-center mb-3">
-            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mr-3">
-              <div className="w-3 h-3 bg-primary rounded-full"></div>
+        <div className="mb-3">
+          <div className="flex flex-col space-y-2">
+            <div className="flex items-center mb-1">
+              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mr-3">
+                <div className="w-3 h-3 bg-primary rounded-full"></div>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Pickup Location</p>
+              </div>
             </div>
-            <div 
-              className="flex-1 py-2 px-3 bg-neutral-50 rounded-lg border border-neutral-200 flex justify-between items-center cursor-pointer"
-              onClick={() => setShowPickupLocationPicker(true)}
-            >
-              <span className={`${!currentLocation.address ? 'text-gray-400' : ''}`}>
-                {currentLocation.address || "Set your pickup location"}
-              </span>
-              <Navigation className="h-4 w-4 text-primary" />
-            </div>
-          </div>
-        ) : (
-          <div className="mb-3">
-            {/* Use the Google Location Picker for a more robust experience */}
-            <GoogleLocationPicker 
-              onLocationSelect={handleLocationSelect}
-              label="Pickup Location"
-              buttonText="Use My Current Location"
-            />
+            
             <Button 
-              variant="ghost" 
-              size="sm" 
-              className="mt-2"
-              onClick={() => setShowPickupLocationPicker(false)}
+              type="button" 
+              variant="outline" 
+              size="sm"
+              className="w-full flex items-center gap-2"
+              onClick={getCurrentLocation}
             >
-              Cancel
+              <Navigation className="h-4 w-4" />
+              <span>Use My Current Location</span>
             </Button>
+            
+            <div className="flex items-center mt-1">
+              <Input
+                type="text"
+                placeholder="Enter pickup address"
+                className="flex-1 py-2 px-3 bg-neutral-50 rounded-lg border border-neutral-200"
+                value={currentLocation.address}
+                onChange={(e) => setCurrentLocation({...currentLocation, address: e.target.value})}
+                onFocus={() => setShowPickupLocationPicker(true)}
+              />
+            </div>
+            
+            {showPickupLocationPicker && (
+              <div className="mt-2">
+                <GoogleLocationPicker 
+                  onLocationSelect={handleLocationSelect}
+                  label="Search for location"
+                  buttonText="Use Selected Location"
+                />
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="mt-2"
+                  onClick={() => setShowPickupLocationPicker(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
           </div>
-        )}
+        </div>
         
         {!showDestinationPicker ? (
           <div className="flex items-center">

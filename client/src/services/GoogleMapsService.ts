@@ -25,7 +25,7 @@ export interface RouteInfo {
 }
 
 class GoogleMapsService {
-  private apiKey: string = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  private apiKey: string = process.env.GOOGLE_MAPS_API_KEY || import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   private geocoder: google.maps.Geocoder | null = null;
   private directionsService: google.maps.DirectionsService | null = null;
 
@@ -51,8 +51,23 @@ class GoogleMapsService {
     }
 
     return new Promise((resolve, reject) => {
+      // Check if we already have a Google Maps script in the document
+      const existingScript = document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]');
+      if (existingScript) {
+        if (window.google && window.google.maps) {
+          this.initServices();
+          resolve();
+          return;
+        }
+      }
+      
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${this.apiKey}&libraries=places`;
+      
+      // Get API key from environment
+      const apiKey = process.env.GOOGLE_MAPS_API_KEY || import.meta.env.GOOGLE_MAPS_API_KEY;
+      console.log("Using Google Maps with API key present:", !!apiKey);
+      
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
       script.async = true;
       script.defer = true;
       script.onload = () => {
