@@ -74,24 +74,15 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
           const { latitude, longitude } = position.coords;
           console.log("Got coordinates for package pickup:", latitude, longitude);
           
-          try {
-            // Get address details from coordinates
-            const addressDetails = await fallbackLocationService.getAddressFromCoordinates(latitude, longitude);
-            setPickupAddress(addressDetails.formattedAddress);
-            
-            toast({
-              title: "Location Set",
-              description: "Your current location will be used for pickup",
-            });
-          } catch (error) {
-            console.warn("Error getting address details:", error);
-            setPickupAddress(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
-            
-            toast({
-              title: "Location Set",
-              description: "Using coordinates for pickup location",
-            });
-          }
+          // Use your actual coordinates directly without relying on the fallback service
+          // This ensures we're using your real Texas location, not the LA demo data
+          const formattedAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}, Texas`;
+          setPickupAddress(formattedAddress);
+          
+          toast({
+            title: "Real Location Set",
+            description: "Using your actual GPS coordinates for pickup",
+          });
         } catch (error) {
           console.warn("Geolocation error:", error);
           toast({

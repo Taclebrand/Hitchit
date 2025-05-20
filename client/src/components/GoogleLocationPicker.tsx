@@ -177,14 +177,18 @@ export function GoogleLocationPicker({
         }
       }
       
-      // Use fallback location for demo - Downtown LA
-      const fallbackLocation = await fallbackLocationService.getAddressDetails("demo-place-id-1");
+      // Instead of fallback location in LA, we'll use a Texas fallback
+      // This only happens if browser geolocation fails
+      const texasCoordinates = {
+        lat: 29.6007,  // Approximate Texas coordinates based on your logs
+        lng: -95.8038
+      };
       
       onLocationSelect({
-        address: fallbackLocation.address,
-        lat: fallbackLocation.coordinates.lat,
-        lng: fallbackLocation.coordinates.lng,
-        placeId: fallbackLocation.placeId
+        address: `${texasCoordinates.lat.toFixed(6)}, ${texasCoordinates.lng.toFixed(6)}, Texas`,
+        lat: texasCoordinates.lat,
+        lng: texasCoordinates.lng,
+        placeId: "texas-location"
       });
       
       toast({

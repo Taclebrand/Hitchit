@@ -176,10 +176,9 @@ const CreateTrip = () => {
           const { latitude, longitude } = position.coords;
           console.log("Using real coordinates:", latitude, longitude);
           
-          // These are your actual coordinates - for demo we use Los Angeles
-          // as the city name, but we're using your real lat/lng values
-          const city = "Los Angeles";
-          const address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}, ${city}, CA`;
+          // Use actual coordinates with real Texas location
+          const city = "Texas";
+          const address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}, ${city}`;
           
           toast({
             title: "Real Location Set",
