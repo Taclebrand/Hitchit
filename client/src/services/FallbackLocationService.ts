@@ -27,55 +27,55 @@ type AddressDetails = {
   formattedAddress: string;
 };
 
-// Demo locations for testing without API keys
+// Texas locations for testing
 const demoLocations: Record<string, AddressDetails> = {
   'demo-place-id-1': {
     placeId: 'demo-place-id-1',
-    address: 'Downtown Los Angeles, CA, USA',
-    coordinates: { lat: 34.0522, lng: -118.2437 },
-    formattedAddress: 'Downtown Los Angeles, CA, USA'
+    address: 'Houston, TX, USA',
+    coordinates: { lat: 29.7604, lng: -95.3698 },
+    formattedAddress: 'Houston, TX, USA'
   },
   'demo-place-id-2': {
     placeId: 'demo-place-id-2',
-    address: 'Santa Monica Pier, Santa Monica, CA, USA',
-    coordinates: { lat: 34.0085, lng: -118.4985 },
-    formattedAddress: 'Santa Monica Pier, Santa Monica, CA, USA'
+    address: 'Sugar Land, TX, USA',
+    coordinates: { lat: 29.6197, lng: -95.6349 },
+    formattedAddress: 'Sugar Land, TX, USA'
   },
   'demo-place-id-3': {
     placeId: 'demo-place-id-3',
-    address: 'Hollywood Sign, Los Angeles, CA, USA',
-    coordinates: { lat: 34.1341, lng: -118.3215 },
-    formattedAddress: 'Hollywood Sign, Los Angeles, CA, USA'
+    address: 'Katy, TX, USA',
+    coordinates: { lat: 29.7858, lng: -95.8245 },
+    formattedAddress: 'Katy, TX, USA'
   },
   'demo-place-id-4': {
     placeId: 'demo-place-id-4',
-    address: 'Universal Studios Hollywood, Universal City, CA, USA',
-    coordinates: { lat: 34.1381, lng: -118.3534 },
-    formattedAddress: 'Universal Studios Hollywood, Universal City, CA, USA'
+    address: 'Missouri City, TX, USA',
+    coordinates: { lat: 29.6185, lng: -95.5377 },
+    formattedAddress: 'Missouri City, TX, USA'
   },
   'demo-place-id-5': {
     placeId: 'demo-place-id-5',
-    address: 'Griffith Observatory, Los Angeles, CA, USA',
-    coordinates: { lat: 34.1184, lng: -118.3004 },
-    formattedAddress: 'Griffith Observatory, Los Angeles, CA, USA'
+    address: 'Pearland, TX, USA',
+    coordinates: { lat: 29.5637, lng: -95.2860 },
+    formattedAddress: 'Pearland, TX, USA'
   },
   'demo-place-id-6': {
     placeId: 'demo-place-id-6',
-    address: 'Venice Beach, Los Angeles, CA, USA',
-    coordinates: { lat: 33.9850, lng: -118.4695 },
-    formattedAddress: 'Venice Beach, Los Angeles, CA, USA'
+    address: 'Richmond, TX, USA',
+    coordinates: { lat: 29.5822, lng: -95.7608 },
+    formattedAddress: 'Richmond, TX, USA'
   },
   'demo-place-id-7': {
     placeId: 'demo-place-id-7',
-    address: 'The Getty Center, Los Angeles, CA, USA',
-    coordinates: { lat: 34.0775, lng: -118.4746 },
-    formattedAddress: 'The Getty Center, Los Angeles, CA, USA'
+    address: 'Fulshear, TX, USA', 
+    coordinates: { lat: 29.6935, lng: -95.9086 },
+    formattedAddress: 'Fulshear, TX, USA'
   },
   'demo-place-id-8': {
     placeId: 'demo-place-id-8',
-    address: 'Dodger Stadium, Los Angeles, CA, USA',
-    coordinates: { lat: 34.0739, lng: -118.2400 },
-    formattedAddress: 'Dodger Stadium, Los Angeles, CA, USA'
+    address: 'Rosenberg, TX, USA',
+    coordinates: { lat: 29.5572, lng: -95.8085 },
+    formattedAddress: 'Rosenberg, TX, USA'
   }
 };
 
