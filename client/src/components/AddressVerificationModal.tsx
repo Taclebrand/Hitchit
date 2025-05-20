@@ -91,7 +91,7 @@ export const AddressVerificationModal: React.FC<AddressVerificationModalProps> =
         <DialogFooter className="flex justify-between sm:justify-between gap-2">
           <Button variant="outline" onClick={onClose} className="flex-1 sm:flex-none">
             <XIcon className="h-4 w-4 mr-2" />
-            Not Correct
+            Edit & Correct
           </Button>
           <Button onClick={handleConfirm} disabled={isVerifying} className="flex-1 sm:flex-none">
             {isVerifying ? (
@@ -99,7 +99,7 @@ export const AddressVerificationModal: React.FC<AddressVerificationModalProps> =
             ) : (
               <>
                 <CheckIcon className="h-4 w-4 mr-2" />
-                Confirm Location
+                Confirm Address
               </>
             )}
           </Button>
