@@ -177,19 +177,15 @@ export function GoogleLocationPicker({
         }
       }
       
-      // Instead of fallback location in LA, we'll use a Texas fallback
-      // This only happens if browser geolocation fails
-      const texasCoordinates = {
-        lat: 29.6007,  // Approximate Texas coordinates based on your logs
-        lng: -95.8038
-      };
-      
-      onLocationSelect({
-        address: `${texasCoordinates.lat.toFixed(6)}, ${texasCoordinates.lng.toFixed(6)}, Texas`,
-        lat: texasCoordinates.lat,
-        lng: texasCoordinates.lng,
-        placeId: "texas-location"
+      // We should let the user know we couldn't get their location
+      // Instead of using any fallback coordinates
+      toast({
+        title: "Location error",
+        description: "We couldn't access your location. Please enter an address manually",
+        variant: "destructive"
       });
+      
+      throw new Error("Could not determine user location");
       
       toast({
         title: "Using Demo Location",

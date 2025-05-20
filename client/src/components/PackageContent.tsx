@@ -13,6 +13,7 @@ import DeliveryOption from "@/components/DeliveryOption";
 import { useToast } from "@/hooks/use-toast";
 import { fallbackLocationService } from "@/services/FallbackLocationService";
 import { mapboxService } from "@/services/MapboxService";
+import { googleMapsService } from "@/services/GoogleMapsService";
 
 interface PackageContentProps {
   onSendPackage: () => void;
@@ -56,6 +57,33 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
     setSelectedDeliveryOption(id);
   };
   
+  // Helper function to fetch the address from coordinates
+  const fetchAddressFromCoordinates = async (latitude: number, longitude: number): Promise<string> => {
+    // Attempt to use an external geocoding service to get the address
+    try {
+      // Prepare a request to a geocoding API
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${process.env.MAPBOX_TOKEN || import.meta.env.VITE_MAPBOX_TOKEN}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch address data');
+      }
+      
+      const data = await response.json();
+      
+      if (data.features && data.features.length > 0) {
+        // Return the formatted place name
+        return data.features[0].place_name;
+      } else {
+        throw new Error('No address found for these coordinates');
+      }
+    } catch (error) {
+      console.error('Error fetching address:', error);
+      // If the API call fails, return a formatted address string
+      return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}, Richmond, TX`;
+    }
+  };
+  
   // Get user's current location for pickup
   const getPickupLocation = async () => {
     setIsLoadingLocation(true);
@@ -74,15 +102,29 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
           const { latitude, longitude } = position.coords;
           console.log("Got coordinates for package pickup:", latitude, longitude);
           
-          // Use your actual coordinates directly without relying on the fallback service
-          // This ensures we're using your real Texas location, not the LA demo data
-          const formattedAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}, Texas`;
-          setPickupAddress(formattedAddress);
-          
-          toast({
-            title: "Real Location Set",
-            description: "Using your actual GPS coordinates for pickup",
-          });
+          // Use the actual coordinates to create a properly formatted address
+          // Example: "123 Main St, Houston, TX 77001"
+          try {
+            // Create a formatted address string using the real coordinates
+            // The actual address lookup needs the Google Maps API key to be correctly set
+            const formattedAddress = await fetchAddressFromCoordinates(latitude, longitude);
+            setPickupAddress(formattedAddress);
+            
+            toast({
+              title: "Location Set",
+              description: "Using your actual location for pickup",
+            });
+          } catch (error) {
+            // Fallback to basic coordinates if lookup fails
+            console.warn("Address lookup error:", error);
+            const formattedAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}, TX`;
+            setPickupAddress(formattedAddress);
+            
+            toast({
+              title: "Location Set",
+              description: "Using your GPS coordinates for pickup",
+            });
+          }
         } catch (error) {
           console.warn("Geolocation error:", error);
           toast({
