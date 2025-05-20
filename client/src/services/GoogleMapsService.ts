@@ -25,7 +25,7 @@ export interface RouteInfo {
 }
 
 class GoogleMapsService {
-  private apiKey: string = process.env.GOOGLE_MAPS_API_KEY || import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  private apiKey: string = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   private geocoder: google.maps.Geocoder | null = null;
   private directionsService: google.maps.DirectionsService | null = null;
 

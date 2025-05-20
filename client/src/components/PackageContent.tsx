@@ -60,11 +60,18 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
   // Helper function to fetch the real street address from coordinates
   const fetchAddressFromCoordinates = async (latitude: number, longitude: number): Promise<string> => {
     try {
-      // Use the Mapbox service's direct reverse geocoding
-      return await mapboxService.getReverseGeocode({
-        lat: latitude,
-        lng: longitude
-      });
+      // Try to use Google Maps API for more accurate address
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.status === 'OK' && data.results && data.results.length > 0) {
+        // Return the formatted address from Google Maps
+        return data.results[0].formatted_address;
+      } else {
+        throw new Error('No address found');
+      }
     } catch (error) {
       console.error('Error getting physical address:', error);
       throw error;

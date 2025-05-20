@@ -176,14 +176,53 @@ const CreateTrip = () => {
           const { latitude, longitude } = position.coords;
           console.log("Using real coordinates:", latitude, longitude);
           
-          // Use actual coordinates with real Texas location
-          const city = "Texas";
-          const address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}, ${city}`;
-          
-          toast({
-            title: "Real Location Set",
-            description: "Your actual current location will be used",
-          });
+          // Get the real street address using Google Maps API
+          try {
+            const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.status === 'OK' && data.results && data.results.length > 0) {
+              // Get the formatted address and city from the result
+              const formattedAddress = data.results[0].formatted_address;
+              
+              // Extract city from address components
+              let city = "Texas";
+              if (data.results[0].address_components) {
+                for (const component of data.results[0].address_components) {
+                  if (component.types.includes('locality') || component.types.includes('administrative_area_level_2')) {
+                    city = component.long_name;
+                    break;
+                  }
+                }
+              }
+              
+              toast({
+                title: "Address Found",
+                description: "Using your street address for trip origin",
+              });
+              
+              const address = formattedAddress;
+              form.setValue("originCity", city);
+              form.setValue("originAddress", address);
+            } else {
+              throw new Error("Could not get address");
+            }
+          } catch (error) {
+            console.error("Failed to get street address:", error);
+            
+            // Fallback if address lookup fails
+            const city = "Texas";
+            const address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}, ${city}`;
+            
+            toast({
+              title: "Using Coordinates",
+              description: "Could not get your street address, using coordinates instead",
+            });
+            
+            form.setValue("originCity", city);
+            form.setValue("originAddress", address);
+          }
           
           // Important: set the form values with the exact coordinates
           form.setValue("originLat", latitude);
