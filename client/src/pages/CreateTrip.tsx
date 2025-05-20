@@ -176,32 +176,36 @@ const CreateTrip = () => {
           const { latitude, longitude } = position.coords;
           console.log("Using real coordinates:", latitude, longitude);
           
-          // Get the real street address using Google Maps API
+          // Get the real street address using Mapbox API
           let city = "Texas";
           let address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}, ${city}`;
           
           try {
-            const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
-            const response = await fetch(url);
+            // Direct call to Mapbox Geocoding API to get real street address
+            const mapboxToken = import.meta.env.MAPBOX_TOKEN;
+            const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&types=address`;
+            
+            const response = await fetch(geocodingUrl);
             const data = await response.json();
             
-            if (data.status === 'OK' && data.results && data.results.length > 0) {
-              // Get the formatted address and city from the result
-              const formattedAddress = data.results[0].formatted_address;
+            if (data.features && data.features.length > 0) {
+              // Get the street address from Mapbox
+              const formattedAddress = data.features[0].place_name;
+              console.log("Found street address:", formattedAddress);
               
-              // Extract city from address components
-              if (data.results[0].address_components) {
-                for (const component of data.results[0].address_components) {
-                  if (component.types.includes('locality') || component.types.includes('administrative_area_level_2')) {
-                    city = component.long_name;
+              // Try to extract city from context
+              if (data.features[0].context) {
+                for (const context of data.features[0].context) {
+                  if (context.id.startsWith('place.')) {
+                    city = context.text;
                     break;
                   }
                 }
               }
               
               toast({
-                title: "Address Found",
-                description: "Using your street address for trip origin",
+                title: "Street Address Found",
+                description: "Using your exact street address",
               });
               
               address = formattedAddress;

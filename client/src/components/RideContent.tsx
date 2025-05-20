@@ -175,16 +175,17 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
         console.log("Got real location coordinates:", latitude, longitude);
         
         try {
-          // Direct Google Maps Geocoding API call to get real address
-          const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-          const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`;
+          // Direct call to Mapbox Geocoding API to get real street address
+          const mapboxToken = import.meta.env.MAPBOX_TOKEN;
+          const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&types=address`;
           
           const response = await fetch(geocodingUrl);
           const data = await response.json();
           
-          if (data.status === 'OK' && data.results && data.results.length > 0) {
-            // Get the formatted address from the Google API response
-            const formattedAddress = data.results[0].formatted_address;
+          if (data.features && data.features.length > 0) {
+            // Get the formatted address from the Mapbox API response
+            const formattedAddress = data.features[0].place_name;
+            console.log("Found street address:", formattedAddress);
             
             setCurrentLocation({
               address: formattedAddress,

@@ -4,9 +4,9 @@
  */
 import { Coordinates } from './GoogleMapsService';
 
-// Access Mapbox token from environment variables
+// Get Mapbox token from environment variables
+// We'll use the MAPBOX_TOKEN environment variable that's available in Replit
 const MAPBOX_TOKEN = import.meta.env.MAPBOX_TOKEN;
-console.log("Mapbox token found:", MAPBOX_TOKEN ? "Yes" : "No");
 
 // Interfaces
 export interface MapboxRoute {
