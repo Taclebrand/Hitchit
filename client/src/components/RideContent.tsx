@@ -75,6 +75,31 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
     }
   ];
 
+  // Handle verification confirmation
+  const handleVerificationConfirm = () => {
+    if (locationToVerify) {
+      if (locationToVerify.type === 'pickup') {
+        setCurrentLocation(locationToVerify.location);
+      } else {
+        setDestination(locationToVerify.location);
+      }
+      
+      // Close the modal
+      setShowVerificationModal(false);
+      
+      // Show success indicator with check mark
+      toast({
+        title: (
+          <span className="flex items-center gap-1">
+            <CheckCircle className="h-4 w-4 text-green-500" />
+            Location Verified
+          </span>
+        ),
+        description: "Your location has been confirmed"
+      });
+    }
+  };
+
   const handleSelectSavedLocation = (location: { name: string, address: string }) => {
     setDestination({
       address: location.address,

@@ -14,6 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 import { fallbackLocationService } from "@/services/FallbackLocationService";
 import { mapboxService } from "@/services/MapboxService";
 import { googleMapsService } from "@/services/GoogleMapsService";
+import { MapPinIcon, CheckCircle } from "lucide-react";
+import { AddressVerificationModal } from "@/components/AddressVerificationModal";
 
 interface PackageContentProps {
   onSendPackage: () => void;
@@ -27,6 +29,12 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
   const [contentsDescription, setContentsDescription] = useState("");
   const [selectedDeliveryOption, setSelectedDeliveryOption] = useState("standard");
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [addressToVerify, setAddressToVerify] = useState<{
+    type: 'pickup' | 'delivery',
+    address: string,
+    coordinates: {lat: number, lng: number}
+  } | null>(null);
   const { toast } = useToast();
 
   const deliveryOptions = [
@@ -55,6 +63,27 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
 
   const handleSelectDeliveryOption = (id: string) => {
     setSelectedDeliveryOption(id);
+  };
+  
+  // Handle address verification confirmation
+  const handleVerificationConfirm = () => {
+    if (addressToVerify) {
+      if (addressToVerify.type === 'pickup') {
+        setPickupAddress(addressToVerify.address);
+      } else {
+        setDeliveryAddress(addressToVerify.address);
+      }
+      
+      // Close the verification modal
+      setShowVerificationModal(false);
+      
+      // Show success toast with check mark
+      toast({
+        title: "Address Verified",
+        description: `Your ${addressToVerify.type} address has been confirmed`,
+        variant: "default"
+      });
+    }
   };
   
   // Helper function to fetch the real street address from coordinates
