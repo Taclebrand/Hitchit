@@ -140,11 +140,23 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
               // Get the formatted address from the Mapbox API response
               const formattedAddress = data.features[0].place_name;
               console.log("Found address:", formattedAddress);
-              setPickupAddress(formattedAddress);
+              
+              // Store address for verification
+              setAddressToVerify({
+                type: 'pickup',
+                address: formattedAddress,
+                coordinates: {
+                  lat: latitude,
+                  lng: longitude
+                }
+              });
+              
+              // Show the verification modal
+              setShowVerificationModal(true);
               
               toast({
-                title: "Street Address Found",
-                description: "Using your exact street address for pickup",
+                title: "Address Found",
+                description: "Please verify your pickup location",
               });
             } else {
               throw new Error('No address found in API response');
@@ -182,6 +194,18 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
 
   return (
     <div className="p-4">
+      {/* Address Verification Modal */}
+      {addressToVerify && (
+        <AddressVerificationModal
+          isOpen={showVerificationModal}
+          onClose={() => setShowVerificationModal(false)}
+          onConfirm={handleVerificationConfirm}
+          address={addressToVerify.address}
+          coordinates={addressToVerify.coordinates}
+          useMapbox={true}
+        />
+      )}
+      
       {/* Package Form */}
       <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
         <h3 className="font-semibold mb-3">Send a Package</h3>
