@@ -55,10 +55,39 @@ const Registration = ({ onComplete, onGoogleLogin, onAppleLogin }: RegistrationP
     }
   });
 
-  const onSubmit = (data: RegistrationFormValues) => {
-    console.log(data);
-    // In a real app, we would call the API to register the user
-    onComplete(data.phoneNumber);
+  const onSubmit = async (data: RegistrationFormValues) => {
+    try {
+      console.log("Registering user:", data);
+      
+      // Save user to database
+      const response = await fetch('/api/users/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: data.email, // Use email as username
+          password: data.password,
+          fullName: data.fullName,
+          email: data.email,
+          phone: data.phoneNumber,
+          isDriver: false
+        }),
+      });
+
+      if (response.ok) {
+        const user = await response.json();
+        console.log("User registered successfully:", user);
+        onComplete(data.phoneNumber);
+      } else {
+        const error = await response.json();
+        console.error("Registration failed:", error);
+        // Handle error - maybe show a toast
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      // Handle error - maybe show a toast
+    }
   };
 
   return (

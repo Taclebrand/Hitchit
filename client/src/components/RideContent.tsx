@@ -180,19 +180,31 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
   // Get the user's current location as pickup point
   const getCurrentLocation = async () => {
     try {
-      if (navigator.geolocation) {
+      if (!navigator.geolocation) {
         toast({
-          title: "Getting location",
-          description: "Finding your current location..."
+          title: "Location not supported",
+          description: "Your browser doesn't support location services",
+          variant: "destructive"
         });
-        
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
+        return;
+      }
+
+      toast({
+        title: "Getting location",
+        description: "Finding your current location..."
+      });
+      
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve, 
+          reject, 
+          {
             enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
-          });
-        });
+            timeout: 15000,
+            maximumAge: 60000
+          }
+        );
+      });
         
         const { latitude, longitude } = position.coords;
         console.log("Got real location coordinates:", latitude, longitude);
@@ -248,18 +260,22 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
             description: "Using your current coordinates"
           });
         }
-      } else {
-        toast({
-          title: "Not supported",
-          description: "Your browser doesn't support geolocation",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
+      } catch (error: any) {
       console.error("Geolocation error:", error);
+      
+      let errorMessage = "Couldn't get your location. Please enter it manually.";
+      
+      if (error.code === 1) {
+        errorMessage = "Location access denied. Please enable location services and try again.";
+      } else if (error.code === 2) {
+        errorMessage = "Location unavailable. Please check your connection and try again.";
+      } else if (error.code === 3) {
+        errorMessage = "Location request timed out. Please try again.";
+      }
+      
       toast({
         title: "Location error",
-        description: "Couldn't get your location. Please enter it manually.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
