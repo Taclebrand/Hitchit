@@ -1,17 +1,29 @@
 import express, { type Request, Response, NextFunction } from "express";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import jwt from "jsonwebtoken";
 import { storage } from "./storage";
 import { db } from "./db";
+import { AuthService } from "./auth";
 import { eq } from "drizzle-orm";
 import { 
   insertUserSchema, 
   insertTripSchema,
   insertVehicleSchema,
   insertBookingSchema,
-  users
+  insertPaymentMethodSchema,
+  insertVerificationCodeSchema,
+  users,
+  User
 } from "@shared/schema";
 import { z } from "zod";
+
+// Authentication middleware
+interface AuthRequest extends Request {
+  user?: User;
+}
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();

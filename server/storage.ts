@@ -131,9 +131,9 @@ export class DatabaseStorage implements IStorage {
 
   async getVerificationCode(email: string, phone: string, type: string): Promise<VerificationCode | undefined> {
     const [code] = await db.select().from(verificationCodes)
-      .where(eq(verificationCodes.email, email))
-      .orWhere(eq(verificationCodes.phone, phone))
-      .andWhere(eq(verificationCodes.type, type))
+      .where(
+        sql`(${verificationCodes.email} = ${email} OR ${verificationCodes.phone} = ${phone}) AND ${verificationCodes.type} = ${type}`
+      )
       .orderBy(sql`${verificationCodes.createdAt} DESC`)
       .limit(1);
     return code;
@@ -205,8 +205,9 @@ export class DatabaseStorage implements IStorage {
     const result = await db.select({
       total: sql`SUM(${driverEarnings.netAmount})`
     }).from(driverEarnings)
-      .where(eq(driverEarnings.driverId, driverId))
-      .andWhere(eq(driverEarnings.status, 'available'));
+      .where(
+        sql`${driverEarnings.driverId} = ${driverId} AND ${driverEarnings.status} = 'available'`
+      );
     
     return Number(result[0]?.total || 0);
   }

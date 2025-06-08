@@ -33,6 +33,11 @@ export const insertUserSchema = createInsertSchema(users).pick({
   phone: true,
   avatar: true,
   isDriver: true,
+  isVerified: true,
+  authProvider: true,
+  providerId: true,
+  stripeCustomerId: true,
+  stripeConnectAccountId: true,
 });
 
 // Vehicles Table
