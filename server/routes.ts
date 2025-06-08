@@ -40,40 +40,296 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.status(500).json({ message: "An unexpected error occurred" });
   });
 
-  // User session authentication middleware
-  const authenticate = async (req: Request, res: Response, next: NextFunction) => {
-    // For demonstration purposes, we'll make authentication optional
-    // This allows our app to work without requiring login
-    if (req.headers.authorization) {
-      // If auth header is present, assume logged in
-      req.user = {
-        id: 1,
-        username: "demo_user",
-        password: "password123", // not used but required by the schema
-        fullName: "Demo User",
-        email: "demo@example.com",
-        phone: "555-123-4567",
-        avatar: null,
-        isDriver: true,
-        createdAt: new Date()
-      };
-    } else if (!req.user) {
-      // Allow development access without authentication
-      // In a real app, you'd want to use a proper auth system
-      req.user = {
-        id: 1, 
-        username: "demo_user",
-        password: "password123", // not used but required by the schema
-        fullName: "Demo User",
-        email: "demo@example.com",
-        phone: "555-123-4567",
-        avatar: null,
-        isDriver: true,
-        createdAt: new Date()
-      };
+  // Real authentication middleware
+  const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    
+    if (!token) {
+      return res.status(401).json({ message: "Authentication required" });
     }
-    next();
+
+    try {
+      const decoded = AuthService.verifyToken(token);
+      if (!decoded) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+      
+      const user = await storage.getUser(decoded.userId);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
+      
+      req.user = user;
+      next();
+    } catch (error) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
   };
+
+  // Authentication Routes
+  
+  // Register with email/password
+  apiRouter.post("/auth/register", async (req: Request, res: Response) => {
+    try {
+      const { username, email, phone, password, fullName, isDriver } = req.body;
+      
+      const result = await AuthService.registerWithEmail({
+        username,
+        email,
+        phone,
+        password,
+        fullName,
+        isDriver: isDriver || false,
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ success: false, message: "Registration failed" });
+    }
+  });
+
+  // Login with email/password
+  apiRouter.post("/auth/login", async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+      const result = await AuthService.loginWithEmail(email, password);
+      res.json(result);
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ success: false, message: "Login failed" });
+    }
+  });
+
+  // Register/Login with phone
+  apiRouter.post("/auth/phone", async (req: Request, res: Response) => {
+    try {
+      const { phone, fullName, isDriver } = req.body;
+      const result = await AuthService.registerWithPhone(phone, fullName, isDriver || false);
+      res.json(result);
+    } catch (error) {
+      console.error("Phone auth error:", error);
+      res.status(500).json({ success: false, message: "Phone authentication failed" });
+    }
+  });
+
+  // Google OAuth callback
+  apiRouter.post("/auth/google", async (req: Request, res: Response) => {
+    try {
+      const { id, email, name, picture } = req.body;
+      const result = await AuthService.handleGoogleAuth({ id, email, name, picture });
+      res.json(result);
+    } catch (error) {
+      console.error("Google auth error:", error);
+      res.status(500).json({ success: false, message: "Google authentication failed" });
+    }
+  });
+
+  // Apple ID callback
+  apiRouter.post("/auth/apple", async (req: Request, res: Response) => {
+    try {
+      const { id, email, name } = req.body;
+      const result = await AuthService.handleAppleAuth({ id, email, name });
+      res.json(result);
+    } catch (error) {
+      console.error("Apple auth error:", error);
+      res.status(500).json({ success: false, message: "Apple authentication failed" });
+    }
+  });
+
+  // Verify code (email/phone/apple)
+  apiRouter.post("/auth/verify", async (req: Request, res: Response) => {
+    try {
+      const { verificationId, code } = req.body;
+      const result = await AuthService.verifyCode(verificationId, code);
+      res.json(result);
+    } catch (error) {
+      console.error("Verification error:", error);
+      res.status(500).json({ success: false, message: "Verification failed" });
+    }
+  });
+
+  // Get current user
+  apiRouter.get("/auth/me", authenticate, async (req: AuthRequest, res: Response) => {
+    res.json({ success: true, user: req.user });
+  });
+
+  // Payment Methods Routes
+  
+  // Get user's payment methods
+  apiRouter.get("/payment-methods", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const methods = await storage.getPaymentMethods(req.user!.id);
+      res.json({ success: true, paymentMethods: methods });
+    } catch (error) {
+      console.error("Get payment methods error:", error);
+      res.status(500).json({ success: false, message: "Failed to fetch payment methods" });
+    }
+  });
+
+  // Add payment method
+  apiRouter.post("/payment-methods", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const data = req.body;
+      const method = await storage.createPaymentMethod({
+        ...data,
+        userId: req.user!.id,
+      });
+      res.json({ success: true, paymentMethod: method });
+    } catch (error) {
+      console.error("Add payment method error:", error);
+      res.status(500).json({ success: false, message: "Failed to add payment method" });
+    }
+  });
+
+  // Set default payment method
+  apiRouter.put("/payment-methods/:id/default", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const methodId = parseInt(req.params.id);
+      await storage.setDefaultPaymentMethod(req.user!.id, methodId);
+      res.json({ success: true, message: "Default payment method updated" });
+    } catch (error) {
+      console.error("Set default payment method error:", error);
+      res.status(500).json({ success: false, message: "Failed to update default payment method" });
+    }
+  });
+
+  // Delete payment method
+  apiRouter.delete("/payment-methods/:id", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const methodId = parseInt(req.params.id);
+      await storage.deletePaymentMethod(methodId);
+      res.json({ success: true, message: "Payment method deleted" });
+    } catch (error) {
+      console.error("Delete payment method error:", error);
+      res.status(500).json({ success: false, message: "Failed to delete payment method" });
+    }
+  });
+
+  // Driver Earnings Routes
+
+  // Get driver earnings
+  apiRouter.get("/driver/earnings", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user!.isDriver) {
+        return res.status(403).json({ success: false, message: "Access denied" });
+      }
+      
+      const earnings = await storage.getDriverEarnings(req.user!.id);
+      const availableAmount = await storage.getAvailableEarnings(req.user!.id);
+      
+      res.json({ 
+        success: true, 
+        earnings, 
+        availableAmount,
+        canWithdraw: availableAmount >= 20 
+      });
+    } catch (error) {
+      console.error("Get driver earnings error:", error);
+      res.status(500).json({ success: false, message: "Failed to fetch earnings" });
+    }
+  });
+
+  // Request withdrawal
+  apiRouter.post("/driver/withdraw", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user!.isDriver) {
+        return res.status(403).json({ success: false, message: "Access denied" });
+      }
+
+      const { amount, bankAccount } = req.body;
+      const availableAmount = await storage.getAvailableEarnings(req.user!.id);
+
+      if (amount < 20) {
+        return res.status(400).json({ success: false, message: "Minimum withdrawal amount is $20" });
+      }
+
+      if (amount > availableAmount) {
+        return res.status(400).json({ success: false, message: "Insufficient available earnings" });
+      }
+
+      const withdrawal = await storage.createWithdrawal({
+        driverId: req.user!.id,
+        amount: amount.toString(),
+        bankAccount,
+      });
+
+      res.json({ success: true, withdrawal });
+    } catch (error) {
+      console.error("Withdrawal request error:", error);
+      res.status(500).json({ success: false, message: "Withdrawal request failed" });
+    }
+  });
+
+  // Get driver withdrawals
+  apiRouter.get("/driver/withdrawals", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user!.isDriver) {
+        return res.status(403).json({ success: false, message: "Access denied" });
+      }
+      
+      const withdrawals = await storage.getDriverWithdrawals(req.user!.id);
+      res.json({ success: true, withdrawals });
+    } catch (error) {
+      console.error("Get withdrawals error:", error);
+      res.status(500).json({ success: false, message: "Failed to fetch withdrawals" });
+    }
+  });
+
+  // Pricing Suggestions Routes
+
+  // Get pricing suggestion
+  apiRouter.post("/pricing/suggest", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const { originLat, originLng, destinationLat, destinationLng } = req.body;
+      
+      let suggestion = await storage.getPricingSuggestion(originLat, originLng, destinationLat, destinationLng);
+      
+      if (!suggestion) {
+        // Calculate new pricing suggestion
+        const distance = calculateDistance(originLat, originLng, destinationLat, destinationLng);
+        const duration = Math.round(distance * 2); // Rough estimate: 2 minutes per mile
+        
+        const baseFare = 2.50;
+        const perMileRate = 1.25;
+        const perMinuteRate = 0.15;
+        
+        const calculatedPrice = baseFare + (distance * perMileRate) + (duration * perMinuteRate);
+        const suggestedMinPrice = Math.round((calculatedPrice * 0.8) * 100) / 100;
+        const suggestedMaxPrice = Math.round((calculatedPrice * 1.2) * 100) / 100;
+        
+        suggestion = await storage.createPricingSuggestion({
+          originLat: originLat.toString(),
+          originLng: originLng.toString(),
+          destinationLat: destinationLat.toString(),
+          destinationLng: destinationLng.toString(),
+          distance: distance.toString(),
+          duration,
+          baseFare: baseFare.toString(),
+          suggestedMinPrice: suggestedMinPrice.toString(),
+          suggestedMaxPrice: suggestedMaxPrice.toString(),
+          demandMultiplier: "1.0",
+        });
+      }
+      
+      res.json({ success: true, suggestion });
+    } catch (error) {
+      console.error("Pricing suggestion error:", error);
+      res.status(500).json({ success: false, message: "Failed to get pricing suggestion" });
+    }
+  });
+
+  // Helper function for distance calculation
+  function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 3958.8; // Earth's radius in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
 
   // Register a new user
   apiRouter.post("/users/register", async (req: Request, res: Response) => {
