@@ -275,27 +275,28 @@ export class AuthService {
   // Verify code
   static async verifyCode(verificationId: number, code: string): Promise<AuthResponse> {
     try {
-      const verification = await storage.getVerificationCode('', '', '');
+      // Get the verification record by ID
+      const verifiedCode = await storage.verifyCode(verificationId);
       
-      // For demo purposes, we'll accept the code if it matches
-      if (code.length === 6) {
-        const verifiedCode = await storage.verifyCode(verificationId);
-        
-        if (verifiedCode && verifiedCode.userId) {
-          // Update user as verified
-          const user = await storage.updateUser(verifiedCode.userId, { isVerified: true });
-          const token = this.generateToken(verifiedCode.userId);
-
-          return {
-            success: true,
-            message: 'Verification successful',
-            user: { ...user, password: undefined },
-            token,
-          };
-        }
+      if (!verifiedCode) {
+        return { success: false, message: 'Invalid verification ID' };
       }
 
-      return { success: false, message: 'Invalid verification code' };
+      // Check if code matches and hasn't expired
+      if (verifiedCode.code === code && verifiedCode.expiresAt > new Date()) {
+        // Update user as verified
+        const user = await storage.updateUser(verifiedCode.userId, { isVerified: true });
+        const token = this.generateToken(verifiedCode.userId);
+
+        return {
+          success: true,
+          message: 'Verification successful',
+          user: { ...user, password: undefined },
+          token,
+        };
+      }
+
+      return { success: false, message: 'Invalid or expired verification code' };
     } catch (error) {
       console.error('Code verification error:', error);
       return { success: false, message: 'Verification failed' };

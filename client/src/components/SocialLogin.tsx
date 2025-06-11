@@ -94,7 +94,7 @@ const SocialLogin = ({ onGoogleLogin, onAppleLogin }: SocialLoginProps) => {
       <Button 
         variant="outline" 
         className="w-full py-6 rounded-full bg-white border flex items-center justify-center space-x-2"
-        onClick={onAppleLogin}
+        onClick={handleAppleLogin}
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12.0001 1.99951C6.47715 1.99951 2 6.47666 2 11.9996C2 17.5225 6.47715 21.9996 12.0001 21.9996C17.5229 21.9996 22.0001 17.5225 22.0001 11.9996C22.0001 6.47666 17.5229 1.99951 12.0001 1.99951Z" fill="white"/>
