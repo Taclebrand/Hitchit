@@ -283,7 +283,7 @@ export class AuthService {
       }
 
       // Check if code matches and hasn't expired
-      if (verifiedCode.code === code && verifiedCode.expiresAt > new Date()) {
+      if (verifiedCode.code === code && verifiedCode.expiresAt > new Date() && verifiedCode.userId !== null) {
         // Update user as verified
         const user = await storage.updateUser(verifiedCode.userId, { isVerified: true });
         const token = this.generateToken(verifiedCode.userId);

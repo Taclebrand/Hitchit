@@ -140,11 +140,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async verifyCode(id: number): Promise<VerificationCode | undefined> {
-    const [code] = await db.update(verificationCodes)
+    // First get the verification code
+    const [code] = await db.select().from(verificationCodes)
+      .where(eq(verificationCodes.id, id));
+    
+    if (!code) {
+      return undefined;
+    }
+    
+    // Then update it as verified
+    const [updatedCode] = await db.update(verificationCodes)
       .set({ verified: true })
       .where(eq(verificationCodes.id, id))
       .returning();
-    return code;
+    
+    return updatedCode;
   }
 
   async deleteExpiredCodes(): Promise<void> {
