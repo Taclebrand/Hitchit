@@ -3,6 +3,7 @@ import { Switch, Route } from "wouter";
 import Welcome from "@/pages/Welcome";
 import Home from "@/pages/Home";
 import Auth from "@/pages/Auth";
+import Login from "@/pages/Login";
 import ProfileSetup from "@/pages/ProfileSetup";
 import DriverRegistration from "@/pages/DriverRegistration";
 import DriverTracking from "@/pages/DriverTracking";
@@ -46,6 +47,7 @@ function App() {
         <Route path="/" component={Welcome} />
         <Route path="/home" component={Home} />
         <Route path="/auth" component={Auth} />
+        <Route path="/login" component={Login} />
         <Route path="/profile-setup" component={ProfileSetup} />
         <Route path="/driver-registration" component={DriverRegistration} />
         <Route path="/driver-signup" component={DriverSignup} />

@@ -10,13 +10,20 @@ const SocialLogin = ({ onGoogleLogin, onAppleLogin }: SocialLoginProps) => {
   const handleGoogleLogin = async () => {
     console.log("Google login clicked");
     
-    // For now, simulate Google OAuth response
-    // In production, this would integrate with Google OAuth SDK
-    const mockGoogleUser = {
-      id: `google_${Date.now()}`,
-      email: "user@gmail.com", 
-      name: "Google User",
-      picture: "https://example.com/avatar.jpg"
+    // Prompt user to enter their actual Google account details
+    const email = prompt("Enter your Gmail address:");
+    const name = prompt("Enter your full name:");
+    
+    if (!email || !name) {
+      console.log("Google login cancelled");
+      return;
+    }
+
+    const googleUser = {
+      id: `google_${email.replace('@', '_').replace('.', '_')}`,
+      email: email,
+      name: name,
+      picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4285f4&color=ffffff`
     };
 
     try {
@@ -25,7 +32,7 @@ const SocialLogin = ({ onGoogleLogin, onAppleLogin }: SocialLoginProps) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(mockGoogleUser),
+        body: JSON.stringify(googleUser),
       });
 
       const result = await response.json();
@@ -45,12 +52,19 @@ const SocialLogin = ({ onGoogleLogin, onAppleLogin }: SocialLoginProps) => {
   const handleAppleLogin = async () => {
     console.log("Apple login clicked");
     
-    // For now, simulate Apple ID response
-    // In production, this would integrate with Apple Sign-In SDK
-    const mockAppleUser = {
-      id: `apple_${Date.now()}`,
-      email: "user@icloud.com",
-      name: "Apple User"
+    // Prompt user to enter their actual Apple ID details
+    const email = prompt("Enter your Apple ID (iCloud email):");
+    const name = prompt("Enter your full name:");
+    
+    if (!email || !name) {
+      console.log("Apple login cancelled");
+      return;
+    }
+
+    const appleUser = {
+      id: `apple_${email.replace('@', '_').replace('.', '_')}`,
+      email: email,
+      name: name
     };
 
     try {
@@ -59,17 +73,42 @@ const SocialLogin = ({ onGoogleLogin, onAppleLogin }: SocialLoginProps) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(mockAppleUser),
+        body: JSON.stringify(appleUser),
       });
 
       const result = await response.json();
       console.log("Apple auth result:", result);
 
       if (result.success) {
-        if (result.token) {
+        if (result.requiresVerification) {
+          // Store verification ID and prompt for code
+          localStorage.setItem('verificationId', result.verificationId.toString());
+          const code = prompt("Enter the 6-digit verification code sent to your email:");
+          
+          if (code) {
+            const verifyResponse = await fetch('/api/auth/verify', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                verificationId: result.verificationId,
+                code: code
+              }),
+            });
+            
+            const verifyResult = await verifyResponse.json();
+            console.log("Apple verification result:", verifyResult);
+            
+            if (verifyResult.success && verifyResult.token) {
+              localStorage.setItem('authToken', verifyResult.token);
+              onAppleLogin();
+            }
+          }
+        } else if (result.token) {
           localStorage.setItem('authToken', result.token);
+          onAppleLogin();
         }
-        onAppleLogin();
       }
     } catch (error) {
       console.error("Apple login error:", error);
