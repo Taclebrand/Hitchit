@@ -59,14 +59,14 @@ const Registration = ({ onComplete, onGoogleLogin, onAppleLogin }: RegistrationP
     try {
       console.log("Registering user:", data);
       
-      // Save user to database
-      const response = await fetch('/api/users/register', {
+      // Use the new auth registration endpoint
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username: data.email, // Use email as username
+          username: `user_${Date.now()}`, // Generate unique username
           password: data.password,
           fullName: data.fullName,
           email: data.email,
@@ -75,14 +75,21 @@ const Registration = ({ onComplete, onGoogleLogin, onAppleLogin }: RegistrationP
         }),
       });
 
-      if (response.ok) {
-        const user = await response.json();
-        console.log("User registered successfully:", user);
+      const result = await response.json();
+      console.log("Registration result:", result);
+
+      if (result.success) {
+        if (result.requiresVerification) {
+          // Store verification ID for later use
+          localStorage.setItem('verificationId', result.verificationId.toString());
+          console.log("Verification required - code sent to email");
+        }
+        if (result.token) {
+          localStorage.setItem('authToken', result.token);
+        }
         onComplete(data.phoneNumber);
       } else {
-        const error = await response.json();
-        console.error("Registration failed:", error);
-        // Handle error - maybe show a toast
+        console.error("Registration failed:", result.message);
       }
     } catch (error) {
       console.error("Registration error:", error);

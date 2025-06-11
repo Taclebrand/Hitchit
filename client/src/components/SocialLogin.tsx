@@ -6,12 +6,81 @@ interface SocialLoginProps {
 }
 
 const SocialLogin = ({ onGoogleLogin, onAppleLogin }: SocialLoginProps) => {
+  
+  const handleGoogleLogin = async () => {
+    console.log("Google login clicked");
+    
+    // For now, simulate Google OAuth response
+    // In production, this would integrate with Google OAuth SDK
+    const mockGoogleUser = {
+      id: `google_${Date.now()}`,
+      email: "user@gmail.com", 
+      name: "Google User",
+      picture: "https://example.com/avatar.jpg"
+    };
+
+    try {
+      const response = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(mockGoogleUser),
+      });
+
+      const result = await response.json();
+      console.log("Google auth result:", result);
+
+      if (result.success) {
+        if (result.token) {
+          localStorage.setItem('authToken', result.token);
+        }
+        onGoogleLogin();
+      }
+    } catch (error) {
+      console.error("Google login error:", error);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    console.log("Apple login clicked");
+    
+    // For now, simulate Apple ID response
+    // In production, this would integrate with Apple Sign-In SDK
+    const mockAppleUser = {
+      id: `apple_${Date.now()}`,
+      email: "user@icloud.com",
+      name: "Apple User"
+    };
+
+    try {
+      const response = await fetch('/api/auth/apple', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(mockAppleUser),
+      });
+
+      const result = await response.json();
+      console.log("Apple auth result:", result);
+
+      if (result.success) {
+        if (result.token) {
+          localStorage.setItem('authToken', result.token);
+        }
+        onAppleLogin();
+      }
+    } catch (error) {
+      console.error("Apple login error:", error);
+    }
+  };
   return (
     <div className="space-y-4">
       <Button 
         variant="outline" 
         className="w-full py-6 rounded-full bg-white border flex items-center justify-center space-x-2"
-        onClick={onGoogleLogin}
+        onClick={handleGoogleLogin}
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22Z" fill="white"/>
