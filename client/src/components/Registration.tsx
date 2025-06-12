@@ -80,14 +80,18 @@ const Registration = ({ onComplete, onGoogleLogin, onAppleLogin }: RegistrationP
 
       if (result.success) {
         if (result.requiresVerification) {
-          // Store verification ID for later use
-          localStorage.setItem('verificationId', result.verificationId.toString());
+          // Store email verification ID
+          localStorage.setItem('emailVerificationId', result.verificationId.toString());
+          localStorage.setItem('userEmail', data.email);
+          localStorage.setItem('userPhone', data.phoneNumber);
           console.log("Verification required - code sent to email");
-        }
-        if (result.token) {
+          
+          // After email verification, we'll trigger phone verification in the OTP component
+          onComplete(data.phoneNumber);
+        } else if (result.token) {
           localStorage.setItem('authToken', result.token);
+          onComplete(data.phoneNumber);
         }
-        onComplete(data.phoneNumber);
       } else {
         console.error("Registration failed:", result.message);
       }

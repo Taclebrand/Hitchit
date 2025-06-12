@@ -167,8 +167,24 @@ export class AuthService {
         expiresAt,
       });
 
-      // TODO: Send SMS verification code via Twilio
-      console.log(`SMS verification code for ${phone}: ${verificationCode}`);
+      // Send SMS verification code via Twilio
+      try {
+        const twilio = require('twilio');
+        if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
+          const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+          await client.messages.create({
+            body: `Your HitchIt verification code is: ${verificationCode}`,
+            from: process.env.TWILIO_PHONE_NUMBER,
+            to: phone
+          });
+          console.log(`SMS sent to ${phone}`);
+        } else {
+          console.log(`SMS verification code for ${phone}: ${verificationCode}`);
+        }
+      } catch (smsError) {
+        console.error('SMS sending failed:', smsError);
+        console.log(`SMS verification code for ${phone}: ${verificationCode}`);
+      }
 
       return {
         success: true,

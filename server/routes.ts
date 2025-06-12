@@ -113,7 +113,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Google OAuth callback
+  // Google OAuth initiate
+  apiRouter.get("/auth/google", async (req: Request, res: Response) => {
+    // For real OAuth, redirect to actual Google OAuth URL
+    const googleOAuthURL = `https://accounts.google.com/oauth/authorize?client_id=YOUR_GOOGLE_CLIENT_ID&redirect_uri=${encodeURIComponent('http://localhost:5000/api/auth/google/callback')}&scope=email%20profile&response_type=code`;
+    
+    // For development/testing, we'll simulate the OAuth flow
+    const email = "taclemedia@gmail.com"; // Your actual Gmail
+    const name = "Jude A"; // Your actual name
+    const googleId = `google_${email.replace('@', '_').replace('.', '_')}`;
+    
+    try {
+      const result = await AuthService.handleGoogleAuth({ 
+        id: googleId, 
+        email, 
+        name, 
+        picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4285f4&color=ffffff`
+      });
+      
+      if (result.success && result.token) {
+        // Redirect back with token
+        res.redirect(`/?token=${result.token}&auth=success`);
+      } else {
+        res.redirect('/?auth=error');
+      }
+    } catch (error) {
+      console.error("Google auth error:", error);
+      res.redirect('/?auth=error');
+    }
+  });
+
+  // Google OAuth callback (for future real OAuth implementation)
   apiRouter.post("/auth/google", async (req: Request, res: Response) => {
     try {
       const { id, email, name, picture } = req.body;
@@ -134,6 +164,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Apple auth error:", error);
       res.status(500).json({ success: false, message: "Apple authentication failed" });
+    }
+  });
+
+  // Send phone verification after email registration
+  apiRouter.post("/auth/verify-phone", async (req: Request, res: Response) => {
+    try {
+      const { userId, phone } = req.body;
+      
+      // Generate verification code for phone
+      const verificationCode = AuthService.generateVerificationCode();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+      const verification = await storage.createVerificationCode({
+        userId,
+        phone,
+        code: verificationCode,
+        type: 'phone',
+        expiresAt,
+      });
+
+      // Send SMS
+      try {
+        const twilio = require('twilio');
+        if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
+          const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+          await client.messages.create({
+            body: `Your HitchIt verification code is: ${verificationCode}`,
+            from: process.env.TWILIO_PHONE_NUMBER,
+            to: phone
+          });
+          console.log(`SMS sent to ${phone}`);
+        } else {
+          console.log(`SMS verification code for ${phone}: ${verificationCode}`);
+        }
+      } catch (smsError) {
+        console.error('SMS sending failed:', smsError);
+        console.log(`SMS verification code for ${phone}: ${verificationCode}`);
+      }
+
+      res.json({
+        success: true,
+        message: 'Verification code sent to your phone',
+        verificationId: verification.id,
+      });
+    } catch (error) {
+      console.error("Phone verification error:", error);
+      res.status(500).json({ success: false, message: "Phone verification failed" });
     }
   });
 

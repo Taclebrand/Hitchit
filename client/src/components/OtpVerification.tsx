@@ -8,10 +8,13 @@ interface OtpVerificationProps {
 }
 
 const OtpVerification = ({ phoneNumber, onComplete, onBack }: OtpVerificationProps) => {
-  const [otp, setOtp] = useState<string[]>(Array(4).fill(""));
+  const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
   const [activeInput, setActiveInput] = useState<number>(0);
   const [secondsLeft, setSecondsLeft] = useState<number>(60);
   const [canResend, setCanResend] = useState<boolean>(false);
+  const [verificationType, setVerificationType] = useState<'email' | 'phone'>('email');
+  const [currentVerificationId, setCurrentVerificationId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     let timer: NodeJS.Timeout | undefined;

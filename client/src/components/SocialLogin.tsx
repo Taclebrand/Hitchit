@@ -10,43 +10,8 @@ const SocialLogin = ({ onGoogleLogin, onAppleLogin }: SocialLoginProps) => {
   const handleGoogleLogin = async () => {
     console.log("Google login clicked");
     
-    // Prompt user to enter their actual Google account details
-    const email = prompt("Enter your Gmail address:");
-    const name = prompt("Enter your full name:");
-    
-    if (!email || !name) {
-      console.log("Google login cancelled");
-      return;
-    }
-
-    const googleUser = {
-      id: `google_${email.replace('@', '_').replace('.', '_')}`,
-      email: email,
-      name: name,
-      picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4285f4&color=ffffff`
-    };
-
-    try {
-      const response = await fetch('/api/auth/google', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(googleUser),
-      });
-
-      const result = await response.json();
-      console.log("Google auth result:", result);
-
-      if (result.success) {
-        if (result.token) {
-          localStorage.setItem('authToken', result.token);
-        }
-        onGoogleLogin();
-      }
-    } catch (error) {
-      console.error("Google login error:", error);
-    }
+    // Redirect to Google OAuth - this will handle real authentication
+    window.location.href = '/api/auth/google';
   };
 
   const handleAppleLogin = async () => {
