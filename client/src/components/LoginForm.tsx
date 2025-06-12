@@ -55,11 +55,14 @@ const LoginForm = ({ onComplete, onGoogleLogin, onAppleLogin }: LoginFormProps) 
       if (result.success) {
         if (result.token) {
           localStorage.setItem('authToken', result.token);
+          localStorage.setItem('currentUser', JSON.stringify(result.user));
         }
         console.log("Login successful:", result.user);
-        onComplete();
+        // Force redirect to home page
+        window.location.href = '/home';
       } else {
         console.error("Login failed:", result.message);
+        alert(result.message);
       }
     } catch (error) {
       console.error("Login error:", error);

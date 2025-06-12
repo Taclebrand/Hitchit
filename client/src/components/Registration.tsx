@@ -94,6 +94,13 @@ const Registration = ({ onComplete, onGoogleLogin, onAppleLogin }: RegistrationP
         }
       } else {
         console.error("Registration failed:", result.message);
+        if (result.message.includes("User already exists")) {
+          // Redirect to login if user already exists
+          alert("Account already exists with this email. Redirecting to login.");
+          window.location.href = '/login';
+        } else {
+          alert(result.message);
+        }
       }
     } catch (error) {
       console.error("Registration error:", error);

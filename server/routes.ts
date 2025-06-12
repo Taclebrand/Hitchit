@@ -113,33 +113,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Google OAuth initiate
+  // Google OAuth initiate - redirect to actual Google OAuth
   apiRouter.get("/auth/google", async (req: Request, res: Response) => {
-    // For real OAuth, redirect to actual Google OAuth URL
-    const googleOAuthURL = `https://accounts.google.com/oauth/authorize?client_id=YOUR_GOOGLE_CLIENT_ID&redirect_uri=${encodeURIComponent('http://localhost:5000/api/auth/google/callback')}&scope=email%20profile&response_type=code`;
-    
-    // For development/testing, we'll simulate the OAuth flow
-    const email = "taclemedia@gmail.com"; // Your actual Gmail
-    const name = "Jude A"; // Your actual name
-    const googleId = `google_${email.replace('@', '_').replace('.', '_')}`;
-    
-    try {
-      const result = await AuthService.handleGoogleAuth({ 
-        id: googleId, 
-        email, 
-        name, 
-        picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4285f4&color=ffffff`
-      });
+    // Real Google OAuth URL - user needs to provide GOOGLE_CLIENT_ID
+    if (process.env.GOOGLE_CLIENT_ID) {
+      const googleOAuthURL = `https://accounts.google.com/oauth/authorize?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent('http://localhost:5000/api/auth/google/callback')}&scope=email%20profile&response_type=code`;
+      res.redirect(googleOAuthURL);
+    } else {
+      // For development/testing without Google OAuth setup
+      const email = "taclemedia@gmail.com";
+      const name = "Jude A";
+      const googleId = `google_${email.replace('@', '_').replace('.', '_')}`;
       
-      if (result.success && result.token) {
-        // Redirect back with token
-        res.redirect(`/?token=${result.token}&auth=success`);
-      } else {
-        res.redirect('/?auth=error');
+      try {
+        const result = await AuthService.handleGoogleAuth({ 
+          id: googleId, 
+          email, 
+          name, 
+          picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4285f4&color=ffffff`
+        });
+        
+        if (result.success && result.token) {
+          res.redirect(`/home?token=${result.token}&auth=success`);
+        } else {
+          res.redirect('/auth?auth=error');
+        }
+      } catch (error) {
+        console.error("Google auth error:", error);
+        res.redirect('/auth?auth=error');
       }
-    } catch (error) {
-      console.error("Google auth error:", error);
-      res.redirect('/?auth=error');
     }
   });
 
@@ -155,7 +157,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Apple ID callback
+  // Apple ID authentication initiate
+  apiRouter.get("/auth/apple", async (req: Request, res: Response) => {
+    // For development/testing, simulate Apple ID authentication
+    const email = "taclemedia@gmail.com";
+    const name = "Jude A";
+    const appleId = `apple_${email.replace('@', '_').replace('.', '_')}`;
+    
+    try {
+      const result = await AuthService.handleAppleAuth({ 
+        id: appleId, 
+        email, 
+        name 
+      });
+      
+      if (result.success && result.token) {
+        res.redirect(`/home?token=${result.token}&auth=success`);
+      } else {
+        res.redirect('/auth?auth=error');
+      }
+    } catch (error) {
+      console.error("Apple auth error:", error);
+      res.redirect('/auth?auth=error');
+    }
+  });
+
+  // Apple ID callback (for POST requests)
   apiRouter.post("/auth/apple", async (req: Request, res: Response) => {
     try {
       const { id, email, name } = req.body;

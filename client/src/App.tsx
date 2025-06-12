@@ -33,8 +33,10 @@ function App() {
     
     if (token && authStatus === 'success') {
       localStorage.setItem('authToken', token);
-      // Clean up URL parameters
-      window.history.replaceState({}, document.title, window.location.pathname);
+      // Clean up URL parameters and redirect to home
+      window.history.replaceState({}, document.title, '/home');
+      window.location.href = '/home';
+      return;
     }
     
     // Check if user has seen onboarding
