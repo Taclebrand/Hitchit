@@ -11,9 +11,21 @@ const Home = () => {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
+    // Handle OAuth callback tokens from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const authStatus = urlParams.get('auth');
+    
+    if (token && authStatus === 'success') {
+      localStorage.setItem('authToken', token);
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, '/home');
+      return;
+    }
+    
     // Check if user is authenticated, redirect to auth if not
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-    if (!isAuthenticated) {
+    const authToken = localStorage.getItem("authToken");
+    if (!authToken) {
       setLocation("/auth");
     }
   }, [setLocation]);
