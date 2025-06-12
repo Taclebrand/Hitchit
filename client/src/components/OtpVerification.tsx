@@ -17,6 +17,15 @@ const OtpVerification = ({ phoneNumber, onComplete, onBack }: OtpVerificationPro
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    // Initialize verification flow
+    const emailVerificationId = localStorage.getItem('emailVerificationId');
+    if (emailVerificationId) {
+      setCurrentVerificationId(emailVerificationId);
+      setVerificationType('email');
+    }
+  }, []);
+
+  useEffect(() => {
     let timer: NodeJS.Timeout | undefined;
     
     if (secondsLeft > 0 && !canResend) {
@@ -44,6 +53,78 @@ const OtpVerification = ({ phoneNumber, onComplete, onBack }: OtpVerificationPro
       
       // TODO: Call API to resend OTP
       console.log("Resending OTP code...");
+    }
+  };
+
+  const handleVerification = async () => {
+    if (!currentVerificationId) return;
+    
+    const otpCode = otp.join('');
+    if (otpCode.length !== 6) return;
+    
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          verificationId: parseInt(currentVerificationId),
+          code: otpCode,
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        if (verificationType === 'email') {
+          // Email verified, now request phone verification
+          const userPhone = localStorage.getItem('userPhone');
+          if (userPhone && result.user) {
+            const phoneResponse = await fetch('/api/auth/verify-phone', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: result.user.id,
+                phone: userPhone,
+              }),
+            });
+
+            const phoneResult = await phoneResponse.json();
+            
+            if (phoneResult.success) {
+              // Switch to phone verification
+              setVerificationType('phone');
+              setCurrentVerificationId(phoneResult.verificationId.toString());
+              setOtp(Array(6).fill(""));
+              setActiveInput(0);
+              setSecondsLeft(60);
+              setCanResend(false);
+              console.log('Phone verification code sent');
+            }
+          }
+        } else {
+          // Phone verified, complete registration
+          if (result.token) {
+            localStorage.setItem('authToken', result.token);
+          }
+          // Clean up stored data
+          localStorage.removeItem('emailVerificationId');
+          localStorage.removeItem('userEmail');
+          localStorage.removeItem('userPhone');
+          onComplete();
+        }
+      } else {
+        console.error('Verification failed:', result.message);
+      }
+    } catch (error) {
+      console.error('Verification error:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -76,10 +157,10 @@ const OtpVerification = ({ phoneNumber, onComplete, onBack }: OtpVerificationPro
         }
         
         // Check if all inputs are filled
-        if (newOtp.every(digit => digit !== "") || activeInput === otp.length - 1) {
-          // TODO: Validate OTP
+        if (newOtp.every(digit => digit !== "")) {
+          // Auto-verify when all digits are entered
           setTimeout(() => {
-            onComplete();
+            handleVerification();
           }, 500);
         }
       }
@@ -108,9 +189,14 @@ const OtpVerification = ({ phoneNumber, onComplete, onBack }: OtpVerificationPro
       
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Enter OTP Code</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          {verificationType === 'email' ? 'Verify Email' : 'Verify Phone'}
+        </h1>
         <p className="text-gray-600">
-          Check your messages! We've sent a one-time code to {phoneNumber}. Enter the code below to verify your account and continue.
+          {verificationType === 'email' 
+            ? `Check your email! We've sent a verification code to ${localStorage.getItem('userEmail')}. Enter the code below to verify your email.`
+            : `Check your messages! We've sent a verification code to ${phoneNumber}. Enter the code below to verify your phone and complete registration.`
+          }
         </p>
       </div>
       
