@@ -26,6 +26,17 @@ function App() {
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
+    // Handle Google OAuth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const authStatus = urlParams.get('auth');
+    
+    if (token && authStatus === 'success') {
+      localStorage.setItem('authToken', token);
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
     // Check if user has seen onboarding
     const hasSeenOnboarding = localStorage.getItem("hasSeenOnboarding");
     
