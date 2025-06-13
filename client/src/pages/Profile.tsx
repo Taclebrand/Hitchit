@@ -3,13 +3,19 @@ import { useLocation } from 'wouter';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { CarIcon, TruckIcon, SettingsIcon, HistoryIcon, UserCheck } from '@/lib/icons';
+import { User, Mail, Calendar, Star } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { formatDistanceToNow } from 'date-fns';
 
 const Profile: React.FC = () => {
   const [, setLocation] = useLocation();
   const [isDriverMode, setIsDriverMode] = useState(false);
   const [isDriverRegistered, setIsDriverRegistered] = useState(false);
+  const { currentUser } = useAuth();
   
   useEffect(() => {
     // Check if user is registered as a driver when component mounts
@@ -22,22 +28,6 @@ const Profile: React.FC = () => {
       setIsDriverMode(activeMode === "driver");
     }
   }, []);
-  
-  // Mock user data - in a real app, this would come from the API or context
-  const user = {
-    name: 'John Smith',
-    email: 'john.smith@example.com',
-    phone: '+1 (555) 123-4567',
-    avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-    rating: 4.8,
-    totalRides: 68,
-    memberSince: 'January 2023',
-    favoriteLocations: [
-      { name: 'Home', address: '123 Main St, New York, NY' },
-      { name: 'Work', address: '456 Business Ave, New York, NY' },
-      { name: 'Gym', address: '789 Fitness Blvd, New York, NY' }
-    ]
-  };
   
   const driverStats = {
     status: 'Active',
@@ -87,25 +77,60 @@ const Profile: React.FC = () => {
         
         <div className="flex-1 overflow-y-auto">
           {/* User Info Card */}
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-6">
-            <div className="flex items-center">
-              <div className="w-20 h-20 rounded-full overflow-hidden mr-4">
-                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold">{user.name}</h2>
-                <div className="flex items-center text-sm text-gray-600 mt-1">
-                  <svg className="w-4 h-4 text-yellow-400 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                  <span>{user.rating}</span>
-                  <span className="mx-2">•</span>
-                  <span>{user.totalRides} trips</span>
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <User className="h-5 w-5" />
+                <span>Account Information</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-xl">
+                  {currentUser?.displayName?.charAt(0) || currentUser?.email?.charAt(0) || 'U'}
                 </div>
-                <p className="text-sm text-gray-500 mt-1">Member since {user.memberSince}</p>
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold">
+                    {currentUser?.displayName || 'User'}
+                  </h2>
+                  <div className="flex items-center space-x-2 text-sm text-muted-foreground mt-1">
+                    <Mail className="h-4 w-4" />
+                    <span>{currentUser?.email}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm text-muted-foreground mt-1">
+                    <Calendar className="h-4 w-4" />
+                    <span>
+                      Member since {currentUser?.metadata?.creationTime 
+                        ? formatDistanceToNow(new Date(currentUser.metadata.creationTime), { addSuffix: false })
+                        : 'recently'}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <Badge variant={currentUser?.emailVerified ? "default" : "secondary"}>
+                    {currentUser?.emailVerified ? "Verified" : "Unverified"}
+                  </Badge>
+                </div>
               </div>
-            </div>
-          </div>
+              
+              <Separator />
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">User ID:</span>
+                  <p className="font-mono text-xs mt-1 break-all">{currentUser?.uid}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Last Sign In:</span>
+                  <p className="mt-1">
+                    {currentUser?.metadata?.lastSignInTime 
+                      ? formatDistanceToNow(new Date(currentUser.metadata.lastSignInTime), { addSuffix: true })
+                      : 'Unknown'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           
           {/* Driver Mode Toggle */}
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-6">
@@ -227,45 +252,32 @@ const Profile: React.FC = () => {
             </div>
           )}
           
-          {/* Favorite Locations */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
-              <h2 className="font-medium text-gray-800">
-                Saved Locations
-              </h2>
-              <Button variant="ghost" size="sm" className="text-primary text-sm h-8">
-                Edit
-              </Button>
-            </div>
-            <div className="divide-y divide-gray-100">
-              {user.favoriteLocations.map((location, index) => (
-                <div key={index} className="p-4 flex">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mr-3 text-gray-600">
-                    {location.name === 'Home' ? (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M9 22V12h6v10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    ) : location.name === 'Work' ? (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    ) : (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M12 10a1 1 0 100-2 1 1 0 000 2z" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-medium">{location.name}</h3>
-                    <p className="text-sm text-gray-500">{location.address}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Quick Actions */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-4 flex flex-col items-center space-y-2"
+                  onClick={() => setLocation('/history')}
+                >
+                  <HistoryIcon width={24} height={24} />
+                  <span className="text-sm">Trip History</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-4 flex flex-col items-center space-y-2"
+                  onClick={() => setLocation('/settings')}
+                >
+                  <SettingsIcon width={24} height={24} />
+                  <span className="text-sm">Settings</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </AppLayout>
