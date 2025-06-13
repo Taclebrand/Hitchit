@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Mail, CheckCircle, AlertCircle, RefreshCw, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { sendEmailVerification } from "@/lib/firebase";
+import { sendEmailVerificationToUser } from "@/lib/firebase";
 
 interface EmailVerificationFlowProps {
   onVerified: () => void;
@@ -48,7 +48,7 @@ export default function EmailVerificationFlow({ onVerified, onSkip }: EmailVerif
 
     setIsResending(true);
     try {
-      await sendEmailVerification(currentUser);
+      await sendEmailVerificationToUser(currentUser);
       toast({
         title: "Verification Email Sent",
         description: `Verification email sent to ${currentUser.email}`,

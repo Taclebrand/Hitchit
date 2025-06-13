@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, User, sendPasswordResetEmail } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, User, sendPasswordResetEmail, sendEmailVerification } from "firebase/auth";
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -109,6 +109,19 @@ export const createUserDocument = async (user: User, additionalData: any = {}) =
   }
   
   return userRef;
+};
+
+
+
+// Send Email Verification
+export const sendEmailVerificationToUser = async (user: User) => {
+  try {
+    await sendEmailVerification(user);
+    console.log("Email verification sent to:", user.email);
+  } catch (error) {
+    console.error("Email verification error:", error);
+    throw error;
+  }
 };
 
 export const getUserDocument = async (uid: string) => {
