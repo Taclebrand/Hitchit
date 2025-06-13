@@ -17,6 +17,7 @@ import SearchTrips from "@/pages/SearchTrips";
 import Trips from "@/pages/Trips";
 import DriverSignup from "@/pages/DriverSignup";
 import Activity from "@/pages/Activity";
+import AIFeatures from "@/pages/AIFeatures";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import MobileResponsiveTest from "@/components/MobileResponsiveTest";
@@ -73,6 +74,7 @@ function AppRoutes() {
             <Route path="/search-trips" component={SearchTrips} />
             <Route path="/trips" component={Trips} />
             <Route path="/activity" component={Activity} />
+            <Route path="/ai-features" component={AIFeatures} />
             <Route path="/mobile-test" component={MobileResponsiveTest} />
           </>
         )}

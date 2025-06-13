@@ -201,6 +201,24 @@ const Settings: React.FC = () => {
             </div>
           ))}
           
+          {/* AI Features */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
+            <h2 className="px-4 py-3 font-medium text-gray-800 bg-gray-50 border-b border-gray-100">
+              AI Features
+            </h2>
+            <div className="divide-y divide-gray-100">
+              <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50" onClick={() => setLocation('/ai-features')}>
+                <div>
+                  <h3 className="font-medium">AI-Powered Tools</h3>
+                  <p className="text-sm text-gray-500">Vehicle verification, voice assistant, trip matching, and personalization</p>
+                </div>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-400">
+                  <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
           {/* App Info */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
             <h2 className="px-4 py-3 font-medium text-gray-800 bg-gray-50 border-b border-gray-100">
