@@ -1,24 +1,44 @@
 import { Button } from "@/components/ui/button";
+import { signInWithGoogle } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 interface SocialLoginProps {
-  onGoogleLogin: () => void;
-  onAppleLogin: () => void;
+  onGoogleLogin?: () => void;
+  onAppleLogin?: () => void;
 }
 
 const SocialLogin = ({ onGoogleLogin, onAppleLogin }: SocialLoginProps) => {
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
   
   const handleGoogleLogin = async () => {
-    console.log("Google login clicked");
-    
-    // Redirect to Google OAuth - this will handle real authentication
-    window.location.href = '/api/auth/google';
+    try {
+      const user = await signInWithGoogle();
+      console.log("Google login successful:", user);
+      
+      toast({
+        title: "Login Successful",
+        description: "Welcome back!",
+      });
+      
+      setLocation('/home');
+      if (onGoogleLogin) onGoogleLogin();
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      toast({
+        title: "Login Failed",
+        description: error.message || "Google login failed. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAppleLogin = async () => {
-    console.log("Apple login clicked");
-    
-    // Redirect to Apple OAuth - requires proper Apple Developer configuration
-    window.location.href = '/api/auth/apple';
+    toast({
+      title: "Coming Soon",
+      description: "Apple Sign-In will be available soon.",
+    });
   };
   return (
     <div className="space-y-4">

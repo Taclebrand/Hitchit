@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Switch, Route } from "wouter";
 import Welcome from "@/pages/Welcome";
 import Home from "@/pages/Home";
@@ -21,64 +20,60 @@ import Activity from "@/pages/Activity";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import MobileResponsiveTest from "@/components/MobileResponsiveTest";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
-function App() {
-  const [initializing, setInitializing] = useState(true);
+function AppRoutes() {
+  const { isAuthenticated, loading } = useAuth();
 
-  useEffect(() => {
-    // Handle Google OAuth callback
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    const authStatus = urlParams.get('auth');
-    
-    if (token && authStatus === 'success') {
-      localStorage.setItem('authToken', token);
-      // Clean up URL parameters and redirect to home
-      window.history.replaceState({}, document.title, '/home');
-      window.location.href = '/home';
-      return;
-    }
-    
-    // Check if user has seen onboarding
-    const hasSeenOnboarding = localStorage.getItem("hasSeenOnboarding");
-    
-    // Simulate splash screen delay
-    const timer = setTimeout(() => {
-      setInitializing(false);
-    }, 2000);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (initializing) {
-    return null;
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
   }
 
   return (
     <TooltipProvider>
       <Switch>
-        <Route path="/" component={Welcome} />
-        <Route path="/home" component={Home} />
-        <Route path="/auth" component={Auth} />
-        <Route path="/login" component={Login} />
-        <Route path="/profile-setup" component={ProfileSetup} />
-        <Route path="/driver-registration" component={DriverRegistration} />
-        <Route path="/driver-signup" component={DriverSignup} />
-        <Route path="/driver-tracking" component={DriverTracking} />
-        <Route path="/mapbox-tracking/:id" component={MapboxDriverTracking} />
-        <Route path="/history" component={RideHistory} />
-        <Route path="/ride-details/:id" component={RideDetails} />
-        <Route path="/progress" component={ProgressReport} />
-        <Route path="/profile" component={Profile} />
-        <Route path="/settings" component={Settings} />
-        <Route path="/create-trip" component={CreateTrip} />
-        <Route path="/search-trips" component={SearchTrips} />
-        <Route path="/trips" component={Trips} />
-        <Route path="/activity" component={Activity} />
-        <Route path="/mobile-test" component={MobileResponsiveTest} />
+        {!isAuthenticated ? (
+          <>
+            <Route path="/" component={Welcome} />
+            <Route path="/auth" component={Auth} />
+            <Route path="/login" component={Login} />
+          </>
+        ) : (
+          <>
+            <Route path="/" component={Home} />
+            <Route path="/home" component={Home} />
+            <Route path="/profile-setup" component={ProfileSetup} />
+            <Route path="/driver-registration" component={DriverRegistration} />
+            <Route path="/driver-signup" component={DriverSignup} />
+            <Route path="/driver-tracking" component={DriverTracking} />
+            <Route path="/mapbox-tracking/:id" component={MapboxDriverTracking} />
+            <Route path="/history" component={RideHistory} />
+            <Route path="/ride-details/:id" component={RideDetails} />
+            <Route path="/progress" component={ProgressReport} />
+            <Route path="/profile" component={Profile} />
+            <Route path="/settings" component={Settings} />
+            <Route path="/create-trip" component={CreateTrip} />
+            <Route path="/search-trips" component={SearchTrips} />
+            <Route path="/trips" component={Trips} />
+            <Route path="/activity" component={Activity} />
+            <Route path="/mobile-test" component={MobileResponsiveTest} />
+          </>
+        )}
         <Route component={NotFound} />
       </Switch>
     </TooltipProvider>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   );
 }
 
