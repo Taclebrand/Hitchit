@@ -4,6 +4,7 @@ import { queryClient } from "@/lib/queryClient";
 import RideContent from "@/components/RideContent";
 import PackageContent from "@/components/PackageContent";
 import NavigationBar from "@/components/NavigationBar";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   UserIcon, 
   NotificationIcon, 
@@ -19,9 +20,26 @@ interface MainAppProps {
 const MainApp = ({ onBookRide, onSendPackage }: MainAppProps) => {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<"ride" | "package" | "driver">("ride");
-  const [userData, setUserData] = useState({
-    name: "Alex",
-  });
+  const { currentUser } = useAuth();
+
+  // Dynamic greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  };
+
+  // Get user's display name or first name from email
+  const getUserName = () => {
+    if (currentUser?.displayName) {
+      return currentUser.displayName.split(' ')[0]; // Use first name only
+    }
+    if (currentUser?.email) {
+      return currentUser.email.split('@')[0]; // Use email prefix if no display name
+    }
+    return "User";
+  };
 
   const handleTabChange = (tab: "ride" | "package" | "driver") => {
     if (tab === "driver") {
@@ -41,8 +59,8 @@ const MainApp = ({ onBookRide, onSendPackage }: MainAppProps) => {
             <UserIcon className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xs opacity-80">Good morning</p>
-            <h3 className="font-medium">{userData.name}</h3>
+            <p className="text-xs opacity-80">{getGreeting()}</p>
+            <h3 className="font-medium">{getUserName()}</h3>
           </div>
         </div>
         <div className="flex items-center space-x-4">
