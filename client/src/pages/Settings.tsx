@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { UserIcon } from '@/lib/icons';
+import { User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { signOutUser } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -106,7 +106,7 @@ const Settings: React.FC = () => {
                 {currentUser?.photoURL ? (
                   <img src={currentUser.photoURL} alt={currentUser.displayName || 'User'} className="w-full h-full object-cover" />
                 ) : (
-                  <UserIcon className="w-8 h-8 text-gray-500" />
+                  <User className="w-8 h-8 text-gray-500" />
                 )}
               </div>
               <div className="flex-1">

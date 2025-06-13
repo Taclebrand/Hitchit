@@ -26,11 +26,26 @@ const SocialLogin = ({ onGoogleLogin, onAppleLogin }: SocialLoginProps) => {
       if (onGoogleLogin) onGoogleLogin();
     } catch (error: any) {
       console.error("Google login error:", error);
-      toast({
-        title: "Login Failed",
-        description: error.message || "Google login failed. Please try again.",
-        variant: "destructive",
-      });
+      
+      if (error.code === 'auth/unauthorized-domain') {
+        toast({
+          title: "Domain Not Authorized",
+          description: "This domain is not authorized for Google Sign-In. Please contact support or use email login.",
+          variant: "destructive",
+        });
+      } else if (error.code === 'auth/popup-blocked') {
+        toast({
+          title: "Popup Blocked",
+          description: "Please allow popups for this site and try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Login Failed",
+          description: error.message || "Google login failed. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
