@@ -275,3 +275,30 @@ export type InsertDriverWithdrawal = z.infer<typeof insertDriverWithdrawalSchema
 
 export type PricingSuggestion = typeof pricingSuggestions.$inferSelect;
 export type InsertPricingSuggestion = z.infer<typeof insertPricingSuggestionSchema>;
+
+// Trip Shares Table - for QR code sharing functionality
+export const tripShares = pgTable("trip_shares", {
+  id: serial("id").primaryKey(),
+  tripId: integer("trip_id").references(() => trips.id).notNull(),
+  sharedByUserId: integer("shared_by_user_id").references(() => users.id).notNull(),
+  shareCode: text("share_code").notNull().unique(), // Unique code for the QR
+  qrCodeData: text("qr_code_data").notNull(), // Base64 encoded QR code image
+  shareUrl: text("share_url").notNull(), // Deep link URL
+  isActive: boolean("is_active").default(true).notNull(),
+  expiresAt: timestamp("expires_at"), // Optional expiration
+  viewCount: integer("view_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertTripShareSchema = createInsertSchema(tripShares).pick({
+  tripId: true,
+  sharedByUserId: true,
+  shareCode: true,
+  qrCodeData: true,
+  shareUrl: true,
+  isActive: true,
+  expiresAt: true,
+});
+
+export type TripShare = typeof tripShares.$inferSelect;
+export type InsertTripShare = z.infer<typeof insertTripShareSchema>;

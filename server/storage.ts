@@ -10,8 +10,9 @@ import {
   DriverEarnings, InsertDriverEarnings,
   DriverWithdrawal, InsertDriverWithdrawal,
   PricingSuggestion, InsertPricingSuggestion,
+  TripShare, InsertTripShare,
   users, vehicles, trips, bookings, verificationCodes, paymentMethods, 
-  driverEarnings, driverWithdrawals, pricingSuggestions,
+  driverEarnings, driverWithdrawals, pricingSuggestions, tripShares,
 } from "@shared/schema";
 
 // Calculate distance between two points using the Haversine formula
@@ -86,6 +87,13 @@ export interface IStorage {
   getBookingsByTripId(tripId: number): Promise<Booking[]>;
   createBooking(booking: InsertBooking): Promise<Booking>;
   updateBookingStatus(id: number, status: string): Promise<Booking | undefined>;
+
+  // Trip Share operations
+  getTripShare(shareCode: string): Promise<TripShare | undefined>;
+  getTripSharesByUserId(userId: number): Promise<TripShare[]>;
+  createTripShare(tripShare: InsertTripShare): Promise<TripShare>;
+  updateTripShareViewCount(shareCode: string): Promise<TripShare | undefined>;
+  deactivateTripShare(shareCode: string): Promise<TripShare | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -407,6 +415,44 @@ export class DatabaseStorage implements IStorage {
       .where(eq(bookings.id, id))
       .returning();
     return booking;
+  }
+
+  // Trip Share operations
+  async getTripShare(shareCode: string): Promise<TripShare | undefined> {
+    const [tripShare] = await db.select().from(tripShares).where(eq(tripShares.shareCode, shareCode));
+    return tripShare;
+  }
+
+  async getTripSharesByUserId(userId: number): Promise<TripShare[]> {
+    return await db.select().from(tripShares).where(eq(tripShares.sharedByUserId, userId));
+  }
+
+  async createTripShare(insertTripShare: InsertTripShare): Promise<TripShare> {
+    const [tripShare] = await db
+      .insert(tripShares)
+      .values(insertTripShare)
+      .returning();
+    return tripShare;
+  }
+
+  async updateTripShareViewCount(shareCode: string): Promise<TripShare | undefined> {
+    const [tripShare] = await db
+      .update(tripShares)
+      .set({ 
+        viewCount: sql`${tripShares.viewCount} + 1`
+      })
+      .where(eq(tripShares.shareCode, shareCode))
+      .returning();
+    return tripShare;
+  }
+
+  async deactivateTripShare(shareCode: string): Promise<TripShare | undefined> {
+    const [tripShare] = await db
+      .update(tripShares)
+      .set({ isActive: false })
+      .where(eq(tripShares.shareCode, shareCode))
+      .returning();
+    return tripShare;
   }
 }
 
