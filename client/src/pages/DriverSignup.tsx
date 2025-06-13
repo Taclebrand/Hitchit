@@ -79,9 +79,7 @@ const driverLicenseSchema = z.object({
     message: "Valid expiry date is required",
   }),
   state: z.string().min(2, "State is required"),
-  dob: z.string().refine(data => !isNaN(Date.parse(data)), {
-    message: "Valid date of birth is required",
-  }),
+  dob: z.string().min(1, "Date of birth is required"),
   licenseImageFront: z.string().optional(),
   licenseImageBack: z.string().optional(),
 });
@@ -866,8 +864,14 @@ const DriverSignup = () => {
                           <FormItem>
                             <FormLabel>Date of Birth</FormLabel>
                             <FormControl>
-                              <Input type="date" {...field} />
+                              <Input 
+                                placeholder="MM/DD/YYYY or text format" 
+                                {...field} 
+                              />
                             </FormControl>
+                            <FormDescription>
+                              Enter in any format (e.g., 01/15/1990, January 15 1990, etc.)
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}

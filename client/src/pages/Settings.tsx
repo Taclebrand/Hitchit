@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, Settings as SettingsIcon, Moon, Sun, Type, Eye, Volume2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { signOutUser } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import QuickProfileCustomization from '@/components/QuickProfileCustomization';
@@ -24,12 +25,12 @@ const Settings: React.FC = () => {
     reducedMotion, 
     toggleReducedMotion 
   } = useAccessibility();
+  const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   
   // Settings state
   const [notifications, setNotifications] = useState(true);
   const [locationServices, setLocationServices] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [biometricLogin, setBiometricLogin] = useState(false);
   const [savePaymentInfo, setSavePaymentInfo] = useState(true);
   
@@ -77,8 +78,12 @@ const Settings: React.FC = () => {
           id: 'darkMode',
           label: 'Dark Mode',
           description: 'Use dark theme for the app',
-          value: darkMode,
-          onChange: setDarkMode
+          value: theme === 'dark',
+          onChange: (checked: boolean) => {
+            if ((checked && theme === 'light') || (!checked && theme === 'dark')) {
+              toggleTheme();
+            }
+          }
         }
       ]
     },

@@ -22,6 +22,8 @@ export const db = getFirestore(app);
 
 // Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope('email');
+googleProvider.addScope('profile');
 
 // Firebase Auth Functions
 export const signInWithGoogle = async () => {

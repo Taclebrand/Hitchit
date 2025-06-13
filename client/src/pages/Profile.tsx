@@ -7,7 +7,7 @@ import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { CarIcon, TruckIcon, SettingsIcon, HistoryIcon, UserCheck } from '@/lib/icons';
-import { User, Mail, Calendar, Star } from 'lucide-react';
+import { User, Mail, Calendar, Star, Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -67,12 +67,21 @@ const Profile: React.FC = () => {
       <div className="p-4 safe-area-top flex flex-col h-full">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Profile</h1>
-          <button 
-            onClick={() => handleNavigate('/settings')}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100"
-          >
-            <SettingsIcon width={20} height={20} />
-          </button>
+          <div className="flex items-center space-x-2">
+            <button 
+              onClick={() => handleNavigate('/notifications')}
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 relative"
+            >
+              <Bell width={20} height={20} />
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs"></span>
+            </button>
+            <button 
+              onClick={() => handleNavigate('/settings')}
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100"
+            >
+              <SettingsIcon width={20} height={20} />
+            </button>
+          </div>
         </div>
         
         <div className="flex-1 overflow-y-auto">
