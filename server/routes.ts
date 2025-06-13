@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import jwt from "jsonwebtoken";
+import QRCode from "qrcode";
+import { nanoid } from "nanoid";
 import { storage } from "./storage";
 import { db } from "./db";
 import { AuthService } from "./auth";
@@ -879,6 +881,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(200).json(updatedBooking);
     } catch (error) {
       return res.status(500).json({ message: "Failed to update booking status" });
+    }
+  });
+
+  // ====== TRIP SHARING API ROUTES ======
+
+  // Generate QR code for trip sharing
+  apiRouter.post("/trips/:id/share", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const tripId = parseInt(req.params.id);
+      
+      if (isNaN(tripId)) {
+        return res.status(400).json({ message: "Invalid trip ID" });
+      }
+      
+      // Verify trip exists and user has access
+      const trip = await storage.getTrip(tripId);
+      if (!trip) {
+        return res.status(404).json({ message: "Trip not found" });
+      }
+      
+      if (trip.driverId !== req.user!.id) {
+        return res.status(403).json({ message: "You can only share your own trips" });
+      }
+      
+      // Generate unique share code
+      const shareCode = nanoid(12);
+      const shareUrl = `${req.protocol}://${req.get('host')}/shared-trip/${shareCode}`;
+      
+      // Generate QR code as base64 data URL
+      const qrCodeData = await QRCode.toDataURL(shareUrl, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      
+      // Create trip share record
+      const tripShare = await storage.createTripShare({
+        tripId,
+        sharedByUserId: req.user!.id,
+        shareCode,
+        qrCodeData,
+        shareUrl,
+        isActive: true,
+        expiresAt: req.body.expiresAt ? new Date(req.body.expiresAt) : null
+      });
+      
+      res.json({
+        success: true,
+        shareCode,
+        shareUrl,
+        qrCodeData,
+        tripShare
+      });
+      
+    } catch (error) {
+      console.error("Trip sharing error:", error);
+      res.status(500).json({ message: "Failed to generate trip share" });
+    }
+  });
+  
+  // Get shared trip by share code
+  apiRouter.get("/shared-trip/:shareCode", async (req: Request, res: Response) => {
+    try {
+      const { shareCode } = req.params;
+      
+      const tripShare = await storage.getTripShare(shareCode);
+      if (!tripShare || !tripShare.isActive) {
+        return res.status(404).json({ message: "Shared trip not found or expired" });
+      }
+      
+      // Check expiration
+      if (tripShare.expiresAt && new Date() > tripShare.expiresAt) {
+        await storage.deactivateTripShare(shareCode);
+        return res.status(404).json({ message: "Shared trip has expired" });
+      }
+      
+      // Get trip details
+      const trip = await storage.getTrip(tripShare.tripId);
+      if (!trip) {
+        return res.status(404).json({ message: "Trip not found" });
+      }
+      
+      // Get sharer details
+      const sharedByUser = await storage.getUser(tripShare.sharedByUserId);
+      
+      // Update view count
+      await storage.updateTripShareViewCount(shareCode);
+      
+      res.json({
+        trip,
+        sharedBy: sharedByUser ? {
+          id: sharedByUser.id,
+          fullName: sharedByUser.fullName,
+          avatar: sharedByUser.avatar
+        } : null,
+        shareInfo: {
+          viewCount: tripShare.viewCount + 1,
+          createdAt: tripShare.createdAt
+        }
+      });
+      
+    } catch (error) {
+      console.error("Get shared trip error:", error);
+      res.status(500).json({ message: "Failed to get shared trip" });
+    }
+  });
+  
+  // Get user's shared trips
+  apiRouter.get("/trips/shared/my-shares", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const tripShares = await storage.getTripSharesByUserId(req.user!.id);
+      
+      // Get trip details for each share
+      const sharesWithTrips = await Promise.all(
+        tripShares.map(async (share) => {
+          const trip = await storage.getTrip(share.tripId);
+          return {
+            ...share,
+            trip
+          };
+        })
+      );
+      
+      res.json(sharesWithTrips);
+      
+    } catch (error) {
+      console.error("Get user trip shares error:", error);
+      res.status(500).json({ message: "Failed to get shared trips" });
+    }
+  });
+  
+  // Deactivate a trip share
+  apiRouter.delete("/trips/shared/:shareCode", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const { shareCode } = req.params;
+      
+      const tripShare = await storage.getTripShare(shareCode);
+      if (!tripShare) {
+        return res.status(404).json({ message: "Trip share not found" });
+      }
+      
+      if (tripShare.sharedByUserId !== req.user!.id) {
+        return res.status(403).json({ message: "You can only delete your own shared trips" });
+      }
+      
+      await storage.deactivateTripShare(shareCode);
+      
+      res.json({ success: true, message: "Trip share deactivated" });
+      
+    } catch (error) {
+      console.error("Deactivate trip share error:", error);
+      res.status(500).json({ message: "Failed to deactivate trip share" });
     }
   });
 
