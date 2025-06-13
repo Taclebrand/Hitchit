@@ -16,7 +16,9 @@ import {
   Settings,
   Zap,
   ChevronRight,
-  Play
+  Play,
+  Edit2,
+  Camera
 } from "lucide-react";
 
 export function DemoAccessibilityFeatures() {
@@ -169,12 +171,31 @@ export function DemoAccessibilityFeatures() {
               
               {showProfileDemo && (
                 <div className="border rounded-lg p-4 bg-muted/30">
-                  <QuickProfileCustomization 
-                    user={mockUser}
-                    onSave={(data) => {
-                      console.log("Demo profile save:", data);
-                    }}
-                  />
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="relative">
+                        <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-xl">
+                          {mockUser.displayName.charAt(0)}
+                        </div>
+                        <div className={`absolute inset-0 rounded-full bg-blue-400 opacity-30 ${!reducedMotion ? 'animate-pulse' : ''}`} />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold">{mockUser.displayName}</h3>
+                        <p className="text-sm text-muted-foreground">{mockUser.email}</p>
+                        <Badge variant="secondary" className="mt-1">Demo Profile</Badge>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button size="sm" variant="outline">
+                        <Edit2 className="h-3 w-3 mr-1" />
+                        Edit Name
+                      </Button>
+                      <Button size="sm" variant="outline">
+                        <Camera className="h-3 w-3 mr-1" />
+                        Change Photo
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               )}
               

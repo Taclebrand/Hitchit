@@ -21,6 +21,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import MobileResponsiveTest from "@/components/MobileResponsiveTest";
 import { FirebaseSetupGuide } from "@/components/FirebaseSetupGuide";
+import { DemoAccessibilityFeatures } from "@/components/DemoAccessibilityFeatures";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AccessibilityProvider } from "@/contexts/AccessibilityContext";
 
@@ -47,6 +48,7 @@ function AppRoutes() {
   return (
     <TooltipProvider>
       <Switch>
+        <Route path="/demo-features" component={DemoAccessibilityFeatures} />
         {!isAuthenticated ? (
           <>
             <Route path="/" component={Welcome} />
