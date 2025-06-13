@@ -4,6 +4,99 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Accessibility Styles */
+.high-contrast {
+  --background: #000000;
+  --foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #333333;
+  --secondary-foreground: #ffffff;
+  --muted: #222222;
+  --muted-foreground: #ffffff;
+  --accent: #444444;
+  --accent-foreground: #ffffff;
+  --destructive: #ff6b6b;
+  --destructive-foreground: #ffffff;
+  --border: #666666;
+  --input: #333333;
+  --ring: #ffffff;
+  --card: #111111;
+  --card-foreground: #ffffff;
+  --popover: #111111;
+  --popover-foreground: #ffffff;
+}
+
+.high-contrast button,
+.high-contrast input,
+.high-contrast select,
+.high-contrast textarea {
+  border: 2px solid #ffffff !important;
+}
+
+.high-contrast .text-gray-500,
+.high-contrast .text-gray-600,
+.high-contrast .text-muted-foreground {
+  color: #ffffff !important;
+}
+
+/* Font Size Controls */
+.font-small {
+  font-size: 14px;
+}
+
+.font-medium {
+  font-size: 16px;
+}
+
+.font-large {
+  font-size: 18px;
+}
+
+.font-large h1 { font-size: 2.5rem; }
+.font-large h2 { font-size: 2rem; }
+.font-large h3 { font-size: 1.75rem; }
+.font-large .text-sm { font-size: 1rem; }
+.font-large .text-xs { font-size: 0.875rem; }
+
+/* Reduced Motion */
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Gear Animation */
+@keyframes gear-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.gear-spin {
+  animation: gear-spin 2s linear infinite;
+}
+
+.reduced-motion .gear-spin {
+  animation: none;
+}
+
+/* Profile Avatar Animation */
+@keyframes profile-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+  50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+}
+
+.profile-glow {
+  animation: profile-glow 2s infinite;
+}
+
+.reduced-motion .profile-glow {
+  animation: none;
+}
+
 :root {
   --background: 0 0% 100%;
   --foreground: 20 14.3% 4.1%;

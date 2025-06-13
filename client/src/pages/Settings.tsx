@@ -3,14 +3,27 @@ import { useLocation } from 'wouter';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { User } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { User, Settings as SettingsIcon, Moon, Sun, Type, Eye, Volume2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAccessibility } from '@/contexts/AccessibilityContext';
 import { signOutUser } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import QuickProfileCustomization from '@/components/QuickProfileCustomization';
 
 const Settings: React.FC = () => {
   const [, setLocation] = useLocation();
   const { currentUser, userDocument } = useAuth();
+  const { 
+    highContrast, 
+    toggleHighContrast, 
+    fontSize, 
+    setFontSize, 
+    reducedMotion, 
+    toggleReducedMotion 
+  } = useAccessibility();
   const { toast } = useToast();
   
   // Settings state
@@ -92,38 +105,78 @@ const Settings: React.FC = () => {
   
   return (
     <AppLayout>
-      <div className="p-4 safe-area-top flex flex-col h-full">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Settings</h1>
-          <p className="text-gray-600">Manage your preferences and account</p>
-        </div>
-        
-        <div className="flex-1 overflow-y-auto">
-          {/* Profile Card */}
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-6">
-            <div className="flex items-center">
-              <div className="w-14 h-14 rounded-full overflow-hidden mr-4 bg-gray-200 flex items-center justify-center">
-                {currentUser?.photoURL ? (
-                  <img src={currentUser.photoURL} alt={currentUser.displayName || 'User'} className="w-full h-full object-cover" />
-                ) : (
-                  <User className="w-8 h-8 text-gray-500" />
-                )}
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">{currentUser?.displayName || currentUser?.email || 'User'}</h3>
-                <p className="text-gray-600 text-sm">{currentUser?.email}</p>
-                <p className="text-gray-600 text-sm">{userDocument?.phone || 'No phone number'}</p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="ml-2"
-                onClick={handleEditProfile}
-              >
-                Edit
-              </Button>
+      <div className="min-h-screen bg-gray-50 py-6 px-4">
+        <div className="max-w-md mx-auto space-y-6">
+          {/* Header */}
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-4">
+              <SettingsIcon className="w-8 h-8 text-blue-600 mr-3 gear-spin" />
+              <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
             </div>
+            <p className="text-gray-600">Manage your account and preferences</p>
           </div>
+
+          {/* Quick Profile Customization */}
+          <QuickProfileCustomization />
+
+          {/* Accessibility Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Eye className="w-5 h-5" />
+                Accessibility
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium">High Contrast Mode</div>
+                  <div className="text-sm text-muted-foreground">
+                    Improve visibility with enhanced contrast
+                  </div>
+                </div>
+                <Switch
+                  checked={highContrast}
+                  onCheckedChange={toggleHighContrast}
+                />
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <div className="font-medium">Font Size</div>
+                <div className="flex gap-2">
+                  {(['small', 'medium', 'large'] as const).map((size) => (
+                    <Button
+                      key={size}
+                      variant={fontSize === size ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setFontSize(size)}
+                      className="capitalize"
+                    >
+                      <Type className="w-3 h-3 mr-1" />
+                      {size}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium">Reduce Motion</div>
+                  <div className="text-sm text-muted-foreground">
+                    Minimize animations and transitions
+                  </div>
+                </div>
+                <Switch
+                  checked={reducedMotion}
+                  onCheckedChange={toggleReducedMotion}
+                />
+              </div>
+            </CardContent>
+          </Card>
           
           {/* Settings Sections */}
           {sections.map((section, idx) => (

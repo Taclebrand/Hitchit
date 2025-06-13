@@ -21,6 +21,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import MobileResponsiveTest from "@/components/MobileResponsiveTest";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AccessibilityProvider } from "@/contexts/AccessibilityContext";
 
 function AppRoutes() {
   const { isAuthenticated, loading } = useAuth();
@@ -71,9 +72,11 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <AccessibilityProvider>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </AccessibilityProvider>
   );
 }
 

@@ -11,6 +11,7 @@ import SocialLogin from "./SocialLogin";
 import PasswordResetModal from "./PasswordResetModal";
 import { useToast } from "@/hooks/use-toast";
 import { signInWithEmail } from "@/lib/firebase";
+import ContextAwareErrorMessage from "./ContextAwareErrorMessage";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
