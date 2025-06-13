@@ -25,6 +25,7 @@ interface FirebaseLoginFormProps {
 export default function FirebaseLoginForm({ onSwitchToRegister }: FirebaseLoginFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -58,32 +59,7 @@ export default function FirebaseLoginForm({ onSwitchToRegister }: FirebaseLoginF
       // Navigation will be handled by the AuthContext
     } catch (error: any) {
       console.error("Login error:", error);
-      
-      if (error.code === 'auth/user-not-found') {
-        toast({
-          title: "Login Failed",
-          description: "No account found with this email address.",
-          variant: "destructive",
-        });
-      } else if (error.code === 'auth/wrong-password') {
-        toast({
-          title: "Login Failed",
-          description: "Incorrect password. Please try again.",
-          variant: "destructive",
-        });
-      } else if (error.code === 'auth/invalid-email') {
-        toast({
-          title: "Login Failed",
-          description: "Please enter a valid email address.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Login Failed",
-          description: error.message || "An error occurred during login",
-          variant: "destructive",
-        });
-      }
+      setError(error);
     } finally {
       setIsLoading(false);
     }
@@ -108,6 +84,21 @@ export default function FirebaseLoginForm({ onSwitchToRegister }: FirebaseLoginF
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {error && (
+          <ContextAwareErrorMessage 
+            error={error}
+            context={{ 
+              type: 'auth',
+              code: error.code,
+              action: 'login'
+            }}
+            onRetry={() => {
+              setError(null);
+              form.handleSubmit(onSubmit)();
+            }}
+          />
+        )}
+
         <SocialLogin 
           onGoogleLogin={handleGoogleSuccess}
           onAppleLogin={handleAppleSuccess}
