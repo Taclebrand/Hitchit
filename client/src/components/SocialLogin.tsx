@@ -14,15 +14,14 @@ const SocialLogin = ({ onGoogleLogin, onAppleLogin }: SocialLoginProps) => {
   
   const handleGoogleLogin = async () => {
     try {
-      const user = await signInWithGoogle();
-      console.log("Google login successful:", user);
+      // Redirect-based authentication doesn't return a user immediately
+      await signInWithGoogle();
       
       toast({
-        title: "Login Successful",
-        description: "Welcome back!",
+        title: "Redirecting to Google",
+        description: "Please complete the login process.",
       });
       
-      setLocation('/home');
       if (onGoogleLogin) onGoogleLogin();
     } catch (error: any) {
       console.error("Google login error:", error);
@@ -31,12 +30,6 @@ const SocialLogin = ({ onGoogleLogin, onAppleLogin }: SocialLoginProps) => {
         toast({
           title: "Domain Not Authorized",
           description: "Add this domain to your Firebase Authentication settings under 'Authorized domains'.",
-          variant: "destructive",
-        });
-      } else if (error.code === 'auth/popup-blocked') {
-        toast({
-          title: "Popup Blocked",
-          description: "Please allow popups for this site and try again.",
           variant: "destructive",
         });
       } else {

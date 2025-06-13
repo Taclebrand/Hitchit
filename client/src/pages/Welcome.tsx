@@ -2,11 +2,15 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import Splash from "@/components/Splash";
 import Onboarding from "@/components/Onboarding";
+import { useTheme } from "@/contexts/ThemeContext";
+import { Button } from "@/components/ui/button";
+import { Moon, Sun } from "lucide-react";
 
 const Welcome = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [, setLocation] = useLocation();
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     // Check if user has completed onboarding before
@@ -48,11 +52,36 @@ const Welcome = () => {
     setLocation("/auth");
   };
 
+  const ThemeToggle = () => (
+    <Button
+      variant="outline"
+      size="icon"
+      onClick={toggleTheme}
+      className="fixed top-4 right-4 z-50 bg-background/80 backdrop-blur-sm"
+    >
+      {theme === 'dark' ? (
+        <Sun className="h-4 w-4" />
+      ) : (
+        <Moon className="h-4 w-4" />
+      )}
+    </Button>
+  );
+
   if (showSplash) {
-    return <Splash />;
+    return (
+      <div className="relative">
+        <ThemeToggle />
+        <Splash />
+      </div>
+    );
   }
 
-  return <Onboarding onComplete={handleOnboardingComplete} onSkip={handleSkip} />;
+  return (
+    <div className="relative">
+      <ThemeToggle />
+      <Onboarding onComplete={handleOnboardingComplete} onSkip={handleSkip} />
+    </div>
+  );
 };
 
 export default Welcome;

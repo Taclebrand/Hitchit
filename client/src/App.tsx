@@ -81,7 +81,7 @@ function AppRoutes() {
           </>
         )}
         <Route path="/shared-trip/:shareCode" component={SharedTrip} />
-        <Route component={NotFound} />
+        <Route component={() => isAuthenticated ? <Home /> : <Welcome />} />
       </Switch>
     </TooltipProvider>
   );
