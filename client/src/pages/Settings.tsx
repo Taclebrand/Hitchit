@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Settings as SettingsIcon, Moon, Sun, Type, Eye, Volume2 } from 'lucide-react';
+import { User, Settings as SettingsIcon, Moon, Sun, Type, Eye, Volume2, CreditCard } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -206,6 +206,22 @@ const Settings: React.FC = () => {
             </div>
           ))}
           
+          {/* Account Management */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
+            <h2 className="px-4 py-3 font-medium text-gray-800 bg-gray-50 border-b border-gray-100">
+              Account Management
+            </h2>
+            <div className="divide-y divide-gray-100">
+              <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50" onClick={() => setLocation('/payment-settings')}>
+                <div>
+                  <h3 className="font-medium">Payment Settings</h3>
+                  <p className="text-sm text-gray-500">Manage payment methods and withdrawals</p>
+                </div>
+                <CreditCard className="h-5 w-5 text-gray-400" />
+              </div>
+            </div>
+          </div>
+
           {/* AI Features */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
             <h2 className="px-4 py-3 font-medium text-gray-800 bg-gray-50 border-b border-gray-100">

@@ -43,6 +43,26 @@ const CreateTrip = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  
+  const [originLocation, setOriginLocation] = useState({
+    address: "",
+    coordinates: null as { lat: number; lng: number } | null,
+    detailedAddress: undefined as any
+  });
+  
+  const [destinationLocation, setDestinationLocation] = useState({
+    address: "",
+    coordinates: null as { lat: number; lng: number } | null,
+    detailedAddress: undefined as any
+  });
+
+  const [pricing, setPricing] = useState({
+    basePrice: 3.50,
+    perMileRate: 1.25,
+    perMinuteRate: 0.35,
+    minimumFare: 7.00,
+    useCustomPrice: false
+  });
   const [vehicles, setVehicles] = useState<{ id: number, make: string, model: string }[]>([
     { id: 1, make: "Toyota", model: "Camry" },
     { id: 2, make: "Honda", model: "Accord" },
