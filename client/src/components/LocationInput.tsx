@@ -1,0 +1,250 @@
+import React, { useState, useEffect } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { MapPin, Navigation, Edit3, Check, X } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+interface Address {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
+interface LocationData {
+  address: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+  detailedAddress?: Address;
+}
+
+interface LocationInputProps {
+  label: string;
+  placeholder?: string;
+  value?: LocationData;
+  onChange: (location: LocationData) => void;
+  type?: 'pickup' | 'dropoff';
+  showCurrentLocation?: boolean;
+}
+
+export const LocationInput: React.FC<LocationInputProps> = ({
+  label,
+  placeholder = "Enter address",
+  value,
+  onChange,
+  type = 'pickup',
+  showCurrentLocation = true
+}) => {
+  const [isManualEntry, setIsManualEntry] = useState(false);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [manualAddress, setManualAddress] = useState<Address>({
+    street: '',
+    city: '',
+    state: '',
+    zipCode: ''
+  });
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (value?.detailedAddress) {
+      setManualAddress(value.detailedAddress);
+    }
+  }, [value]);
+
+  const getCurrentLocation = async () => {
+    setIsLoadingLocation(true);
+    try {
+      if (!navigator.geolocation) {
+        throw new Error('Geolocation not supported');
+      }
+
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
+      });
+
+      const { latitude, longitude } = position.coords;
+
+      // Use Mapbox Geocoding API for reverse geocoding
+      const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN || 'pk.eyJ1IjoidGFjbGVicmFuZCIsImEiOiJjbWF2bHYyY3IwNjhkMnlwdXA4emFydjllIn0.ve6FSKPekZ-zr7cZzWoIUw';
+      const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&types=address`;
+      
+      const response = await fetch(geocodingUrl);
+      const data = await response.json();
+      
+      if (data.features && data.features.length > 0) {
+        const feature = data.features[0];
+        const formattedAddress = feature.place_name;
+        
+        // Parse detailed address components
+        const addressComponents = feature.place_name.split(', ');
+        const detailedAddress: Address = {
+          street: addressComponents[0] || '',
+          city: feature.context?.find((c: any) => c.id.startsWith('place.'))?.text || addressComponents[1] || '',
+          state: feature.context?.find((c: any) => c.id.startsWith('region.'))?.short_code?.replace('US-', '') || '',
+          zipCode: feature.context?.find((c: any) => c.id.startsWith('postcode.'))?.text || ''
+        };
+
+        onChange({
+          address: formattedAddress,
+          coordinates: { lat: latitude, lng: longitude },
+          detailedAddress
+        });
+
+        toast({
+          title: "Location Found",
+          description: "Using your current location",
+        });
+      } else {
+        throw new Error('No address found');
+      }
+    } catch (error) {
+      console.error('Location error:', error);
+      toast({
+        title: "Location Error",
+        description: "Could not get your location. Please enter manually.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingLocation(false);
+    }
+  };
+
+  const handleManualAddressChange = (field: keyof Address, value: string) => {
+    const updatedAddress = { ...manualAddress, [field]: value };
+    setManualAddress(updatedAddress);
+    
+    // Format as single address string
+    const formattedAddress = `${updatedAddress.street}, ${updatedAddress.city}, ${updatedAddress.state} ${updatedAddress.zipCode}`.replace(/,\s*,/g, ',').replace(/^,\s*|,\s*$/g, '');
+    
+    onChange({
+      address: formattedAddress,
+      detailedAddress: updatedAddress
+    });
+  };
+
+  const handleSingleAddressChange = (address: string) => {
+    onChange({
+      address,
+      coordinates: value?.coordinates,
+      detailedAddress: value?.detailedAddress
+    });
+  };
+
+  const toggleManualEntry = () => {
+    setIsManualEntry(!isManualEntry);
+    if (!isManualEntry && value?.address && !value?.detailedAddress) {
+      // Try to parse existing address into components
+      const parts = value.address.split(', ');
+      if (parts.length >= 3) {
+        const stateZip = parts[parts.length - 1].split(' ');
+        setManualAddress({
+          street: parts.slice(0, -2).join(', '),
+          city: parts[parts.length - 2],
+          state: stateZip[0] || '',
+          zipCode: stateZip.slice(1).join(' ') || ''
+        });
+      }
+    }
+  };
+
+  return (
+    <Card className="w-full">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-2">
+            <MapPin className="h-4 w-4 text-blue-600" />
+            <span className="font-medium">{label}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            {type === 'pickup' && (
+              <Badge variant={value?.coordinates ? "default" : "secondary"}>
+                {value?.coordinates ? "GPS" : "Manual"}
+              </Badge>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleManualEntry}
+              className="p-1 h-auto"
+            >
+              <Edit3 className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+
+        {!isManualEntry ? (
+          <div className="space-y-3">
+            {showCurrentLocation && type === 'pickup' && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={getCurrentLocation}
+                disabled={isLoadingLocation}
+              >
+                <Navigation className="h-4 w-4 mr-2" />
+                {isLoadingLocation ? "Getting Location..." : "Use Current Location"}
+              </Button>
+            )}
+            
+            <Input
+              placeholder={placeholder}
+              value={value?.address || ''}
+              onChange={(e) => handleSingleAddressChange(e.target.value)}
+              className="w-full"
+            />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Detailed Address</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleManualEntry}
+                className="p-1 h-auto text-green-600"
+              >
+                <Check className="h-3 w-3" />
+              </Button>
+            </div>
+            
+            <Input
+              placeholder="Street Address"
+              value={manualAddress.street}
+              onChange={(e) => handleManualAddressChange('street', e.target.value)}
+            />
+            
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                placeholder="City"
+                value={manualAddress.city}
+                onChange={(e) => handleManualAddressChange('city', e.target.value)}
+              />
+              <Input
+                placeholder="State"
+                value={manualAddress.state}
+                onChange={(e) => handleManualAddressChange('state', e.target.value)}
+              />
+            </div>
+            
+            <Input
+              placeholder="ZIP Code"
+              value={manualAddress.zipCode}
+              onChange={(e) => handleManualAddressChange('zipCode', e.target.value)}
+            />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default LocationInput;
