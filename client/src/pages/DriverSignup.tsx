@@ -147,7 +147,7 @@ const DriverSignup = () => {
       type: "",
       make: "",
       model: "",
-      year: new Date().getFullYear().toString(),
+      year: "2023",
       color: "",
       licensePlate: "",
       seats: 4,
@@ -355,14 +355,8 @@ const DriverSignup = () => {
   const onVehicleSubmit = async (data: VehicleFormValues) => {
     setIsLoading(true);
     try {
-      // Handle year conversion - ensure it's an integer for the API
-      const processedData = {
-        ...data,
-        year: typeof data.year === 'string' ? parseInt(data.year, 10) : data.year
-      };
-      
       // Store vehicle data for the next step
-      setVehicleData(processedData);
+      setVehicleData(data);
       
       // Attempt to register the vehicle with the API
       const response = await fetch('/api/vehicles', {
@@ -372,7 +366,7 @@ const DriverSignup = () => {
         },
         body: JSON.stringify({
           userId: 1, // Using our test user
-          ...processedData
+          ...data
         })
       });
       

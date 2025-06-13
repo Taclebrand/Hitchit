@@ -19,6 +19,7 @@ import DriverSignup from "@/pages/DriverSignup";
 import Activity from "@/pages/Activity";
 import AIFeatures from "@/pages/AIFeatures";
 import SharedTrip from "@/pages/SharedTrip";
+import Notifications from "@/pages/Notifications";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import MobileResponsiveTest from "@/components/MobileResponsiveTest";
@@ -72,6 +73,7 @@ function AppRoutes() {
             <Route path="/progress" component={ProgressReport} />
             <Route path="/profile" component={Profile} />
             <Route path="/settings" component={Settings} />
+            <Route path="/notifications" component={Notifications} />
             <Route path="/create-trip" component={CreateTrip} />
             <Route path="/search-trips" component={SearchTrips} />
             <Route path="/trips" component={Trips} />
