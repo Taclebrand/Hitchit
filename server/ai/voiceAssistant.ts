@@ -176,8 +176,8 @@ export class ConversationalVoiceAssistant {
             Missing info: ${currentIntent.clarificationNeeded.join(', ')}
             
             User's frequent locations:
-            ${[...userTrips.map(t => [t.departureLocation, t.destinationLocation]), 
-               ...userBookings.map(b => [b.pickupLocation, b.dropoffLocation])]
+            ${[...userTrips.map(t => [t.originAddress, t.destinationAddress]), 
+               ...userBookings.map(b => [b.pickupAddress, b.dropoffAddress])]
                .flat()
                .slice(0, 10)
                .join(', ')}

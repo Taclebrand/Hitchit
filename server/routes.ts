@@ -5,6 +5,10 @@ import jwt from "jsonwebtoken";
 import { storage } from "./storage";
 import { db } from "./db";
 import { AuthService } from "./auth";
+import { ComputerVisionService } from "./ai/computerVision";
+import { IntelligentTripMatchingService } from "./ai/tripMatching";
+import { ConversationalVoiceAssistant } from "./ai/voiceAssistant";
+import { PersonalizationEngine } from "./ai/personalization";
 import { eq } from "drizzle-orm";
 import { 
   insertUserSchema, 
