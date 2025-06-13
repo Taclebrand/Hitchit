@@ -20,11 +20,21 @@ import Activity from "@/pages/Activity";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import MobileResponsiveTest from "@/components/MobileResponsiveTest";
+import { FirebaseSetupGuide } from "@/components/FirebaseSetupGuide";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AccessibilityProvider } from "@/contexts/AccessibilityContext";
 
 function AppRoutes() {
   const { isAuthenticated, loading } = useAuth();
+
+  // Check if Firebase is properly configured
+  const hasFirebaseConfig = import.meta.env.VITE_FIREBASE_API_KEY && 
+                           import.meta.env.VITE_FIREBASE_PROJECT_ID && 
+                           import.meta.env.VITE_FIREBASE_APP_ID;
+
+  if (!hasFirebaseConfig) {
+    return <FirebaseSetupGuide />;
+  }
 
   if (loading) {
     return (
