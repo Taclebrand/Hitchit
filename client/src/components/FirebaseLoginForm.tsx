@@ -8,8 +8,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Separator } from "@/components/ui/separator";
 import SocialLogin from "./SocialLogin";
+import PasswordResetModal from "./PasswordResetModal";
 import { useToast } from "@/hooks/use-toast";
-import { signInWithEmail, resetPassword } from "@/lib/firebase";
+import { signInWithEmail } from "@/lib/firebase";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -22,7 +23,7 @@ interface FirebaseLoginFormProps {
 
 export default function FirebaseLoginForm({ onSwitchToRegister }: FirebaseLoginFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -33,34 +34,9 @@ export default function FirebaseLoginForm({ onSwitchToRegister }: FirebaseLoginF
     },
   });
 
-  const handleForgotPassword = async () => {
+  const handleForgotPassword = () => {
     const email = form.getValues('email');
-    if (!email) {
-      toast({
-        title: "Email Required",
-        description: "Please enter your email address first.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsResettingPassword(true);
-    try {
-      await resetPassword(email);
-      toast({
-        title: "Password Reset Sent",
-        description: "Check your email for password reset instructions.",
-      });
-    } catch (error: any) {
-      console.error("Password reset error:", error);
-      toast({
-        title: "Reset Failed",
-        description: error.message || "Failed to send password reset email.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsResettingPassword(false);
-    }
+    setShowResetModal(true);
   };
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
@@ -179,10 +155,9 @@ export default function FirebaseLoginForm({ onSwitchToRegister }: FirebaseLoginF
               <button
                 type="button"
                 onClick={handleForgotPassword}
-                disabled={isResettingPassword}
                 className="text-sm text-primary hover:underline"
               >
-                {isResettingPassword ? "Sending..." : "Forgot password?"}
+                Forgot password?
               </button>
             </div>
 
@@ -203,6 +178,12 @@ export default function FirebaseLoginForm({ onSwitchToRegister }: FirebaseLoginF
             </button>
           </p>
         </div>
+
+        <PasswordResetModal 
+          isOpen={showResetModal}
+          onClose={() => setShowResetModal(false)}
+          initialEmail={form.getValues('email')}
+        />
       </CardContent>
     </Card>
   );
