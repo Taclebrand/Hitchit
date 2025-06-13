@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
-import { auth, getUserDocument } from '@/lib/firebase';
+import { auth, getUserDocument, handleGoogleRedirectResult } from '@/lib/firebase';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -26,6 +26,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const handleRedirectAndAuth = async () => {
+      try {
+        // Handle Google redirect result first
+        await handleGoogleRedirectResult();
+      } catch (error) {
+        console.error("Redirect handling error:", error);
+      }
+    };
+
+    handleRedirectAndAuth();
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       
@@ -33,8 +44,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Get additional user data from Firestore
         const userData = await getUserDocument(user.uid);
         setUserDocument(userData);
+        
+        // Store authentication state in localStorage
+        localStorage.setItem("isAuthenticated", "true");
+        localStorage.setItem("currentUser", JSON.stringify({
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL
+        }));
       } else {
         setUserDocument(null);
+        // Clear authentication state from localStorage
+        localStorage.removeItem("isAuthenticated");
+        localStorage.removeItem("currentUser");
       }
       
       setLoading(false);

@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, User, sendPasswordResetEmail, sendEmailVerification } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, User, sendPasswordResetEmail, sendEmailVerification } from "firebase/auth";
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -26,10 +26,23 @@ const googleProvider = new GoogleAuthProvider();
 // Firebase Auth Functions
 export const signInWithGoogle = async () => {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
+    await signInWithRedirect(auth, googleProvider);
   } catch (error) {
     console.error("Google sign-in error:", error);
+    throw error;
+  }
+};
+
+export const handleGoogleRedirectResult = async () => {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result?.user) {
+      await createUserDocument(result.user);
+      return result.user;
+    }
+    return null;
+  } catch (error) {
+    console.error("Google redirect result error:", error);
     throw error;
   }
 };

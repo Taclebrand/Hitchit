@@ -26,6 +26,7 @@ import { FirebaseSetupGuide } from "@/components/FirebaseSetupGuide";
 import { DemoAccessibilityFeatures } from "@/components/DemoAccessibilityFeatures";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AccessibilityProvider } from "@/contexts/AccessibilityContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 function AppRoutes() {
   const { isAuthenticated, loading } = useAuth();
@@ -88,11 +89,13 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AccessibilityProvider>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </AccessibilityProvider>
+    <ThemeProvider>
+      <AccessibilityProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </AccessibilityProvider>
+    </ThemeProvider>
   );
 }
 
