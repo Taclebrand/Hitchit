@@ -17,67 +17,8 @@ const SocialLogin = ({ onGoogleLogin, onAppleLogin }: SocialLoginProps) => {
   const handleAppleLogin = async () => {
     console.log("Apple login clicked");
     
-    // Prompt user to enter their actual Apple ID details
-    const email = prompt("Enter your Apple ID (iCloud email):");
-    const name = prompt("Enter your full name:");
-    
-    if (!email || !name) {
-      console.log("Apple login cancelled");
-      return;
-    }
-
-    const appleUser = {
-      id: `apple_${email.replace('@', '_').replace('.', '_')}`,
-      email: email,
-      name: name
-    };
-
-    try {
-      const response = await fetch('/api/auth/apple', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(appleUser),
-      });
-
-      const result = await response.json();
-      console.log("Apple auth result:", result);
-
-      if (result.success) {
-        if (result.requiresVerification) {
-          // Store verification ID and prompt for code
-          localStorage.setItem('verificationId', result.verificationId.toString());
-          const code = prompt("Enter the 6-digit verification code sent to your email:");
-          
-          if (code) {
-            const verifyResponse = await fetch('/api/auth/verify', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                verificationId: result.verificationId,
-                code: code
-              }),
-            });
-            
-            const verifyResult = await verifyResponse.json();
-            console.log("Apple verification result:", verifyResult);
-            
-            if (verifyResult.success && verifyResult.token) {
-              localStorage.setItem('authToken', verifyResult.token);
-              onAppleLogin();
-            }
-          }
-        } else if (result.token) {
-          localStorage.setItem('authToken', result.token);
-          onAppleLogin();
-        }
-      }
-    } catch (error) {
-      console.error("Apple login error:", error);
-    }
+    // Redirect to Apple OAuth - requires proper Apple Developer configuration
+    window.location.href = '/api/auth/apple';
   };
   return (
     <div className="space-y-4">

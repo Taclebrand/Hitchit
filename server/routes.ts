@@ -120,32 +120,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const googleOAuthURL = `https://accounts.google.com/oauth/authorize?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent('http://localhost:5000/api/auth/google/callback')}&scope=email%20profile&response_type=code`;
       res.redirect(googleOAuthURL);
     } else {
-      // For development/testing without Google OAuth setup
-      const email = "taclemedia@gmail.com";
-      const name = "Jude A";
-      const googleId = `google_${email.replace('@', '_').replace('.', '_')}`;
-      
-      try {
-        const result = await AuthService.handleGoogleAuth({ 
-          id: googleId, 
-          email, 
-          name, 
-          picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4285f4&color=ffffff`
-        });
-        
-        if (result.success && result.token) {
-          res.redirect(`/home?token=${result.token}&auth=success`);
-        } else {
-          res.redirect('/auth?auth=error');
-        }
-      } catch (error) {
-        console.error("Google auth error:", error);
-        res.redirect('/auth?auth=error');
-      }
+      // Redirect to error page if Google OAuth is not configured
+      res.redirect('/auth?error=google_oauth_not_configured');
     }
   });
 
-  // Google OAuth callback (for future real OAuth implementation)
+  // Google OAuth callback - handles the OAuth code from Google
+  apiRouter.get("/auth/google/callback", async (req: Request, res: Response) => {
+    const { code, error } = req.query;
+    
+    if (error) {
+      return res.redirect('/auth?error=oauth_cancelled');
+    }
+    
+    if (!code || !process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+      return res.redirect('/auth?error=oauth_config_missing');
+    }
+
+    try {
+      // Exchange authorization code for access token
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          code: code as string,
+          client_id: process.env.GOOGLE_CLIENT_ID,
+          client_secret: process.env.GOOGLE_CLIENT_SECRET,
+          redirect_uri: 'http://localhost:5000/api/auth/google/callback',
+          grant_type: 'authorization_code',
+        }),
+      });
+
+      const tokenData = await tokenResponse.json();
+      
+      if (!tokenData.access_token) {
+        return res.redirect('/auth?error=oauth_token_failed');
+      }
+
+      // Get user info from Google
+      const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+        },
+      });
+
+      const userData = await userResponse.json();
+      
+      const result = await AuthService.handleGoogleAuth({
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+        picture: userData.picture,
+      });
+
+      if (result.success && result.token) {
+        res.redirect(`/home?token=${result.token}&auth=success`);
+      } else {
+        res.redirect('/auth?error=auth_failed');
+      }
+    } catch (error) {
+      console.error("Google OAuth callback error:", error);
+      res.redirect('/auth?error=oauth_error');
+    }
+  });
+
+  // Google OAuth POST endpoint for direct API calls
   apiRouter.post("/auth/google", async (req: Request, res: Response) => {
     try {
       const { id, email, name, picture } = req.body;
@@ -159,27 +200,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Apple ID authentication initiate
   apiRouter.get("/auth/apple", async (req: Request, res: Response) => {
-    // For development/testing, simulate Apple ID authentication
-    const email = "taclemedia@gmail.com";
-    const name = "Jude A";
-    const appleId = `apple_${email.replace('@', '_').replace('.', '_')}`;
-    
-    try {
-      const result = await AuthService.handleAppleAuth({ 
-        id: appleId, 
-        email, 
-        name 
-      });
-      
-      if (result.success && result.token) {
-        res.redirect(`/home?token=${result.token}&auth=success`);
-      } else {
-        res.redirect('/auth?auth=error');
-      }
-    } catch (error) {
-      console.error("Apple auth error:", error);
-      res.redirect('/auth?auth=error');
-    }
+    // Redirect to error page - Apple OAuth requires proper configuration
+    res.redirect('/auth?error=apple_oauth_not_configured');
   });
 
   // Apple ID callback (for POST requests)

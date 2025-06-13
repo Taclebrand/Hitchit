@@ -66,7 +66,7 @@ const Registration = ({ onComplete, onGoogleLogin, onAppleLogin }: RegistrationP
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username: `user_${Date.now()}`, // Generate unique username
+          username: data.email.split('@')[0] + '_' + Math.random().toString(36).substr(2, 6),
           password: data.password,
           fullName: data.fullName,
           email: data.email,
