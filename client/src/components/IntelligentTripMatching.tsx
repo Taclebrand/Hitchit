@@ -95,13 +95,14 @@ export default function IntelligentTripMatching() {
     setMatchResults([]);
 
     try {
-      const response = await apiRequest('POST', '/api/ai/find-optimal-trips', {
+      const responseRaw = await apiRequest('POST', '/api/ai/find-optimal-trips', {
         riderRequest: {
           ...riderRequest,
           departureTime: riderRequest.departureTime ? new Date(riderRequest.departureTime) : new Date()
         }
       });
 
+      const response = await responseRaw.json();
       setMatchResults(response.matches || []);
 
       toast({
@@ -125,13 +126,14 @@ export default function IntelligentTripMatching() {
     setIsAnalyzing(true);
 
     try {
-      const response = await apiRequest('POST', `/api/ai/optimize-route/${tripId}`, {
+      const responseRaw = await apiRequest('POST', `/api/ai/optimize-route/${tripId}`, {
         newBooking: {
           pickup: riderRequest.pickup,
           dropoff: riderRequest.dropoff
         }
       });
 
+      const response = await responseRaw.json();
       setRouteOptimization(response);
       setSelectedTripId(tripId);
 
@@ -165,7 +167,7 @@ export default function IntelligentTripMatching() {
     setIsAnalyzing(true);
 
     try {
-      const response = await apiRequest('POST', '/api/ai/analyze-trip-demand', {
+      const responseRaw = await apiRequest('POST', '/api/ai/analyze-trip-demand', {
         route: {
           from: {
             lat: riderRequest.pickup.lat,
@@ -184,6 +186,7 @@ export default function IntelligentTripMatching() {
         }
       });
 
+      const response = await responseRaw.json();
       setDemandAnalysis(response);
 
       toast({

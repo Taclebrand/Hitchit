@@ -128,11 +128,12 @@ export default function PersonalizationDashboard() {
 
     try {
       // Load user profile
-      const profileResponse = await apiRequest('GET', '/api/ai/user-profile');
+      const profileResponseRaw = await apiRequest('GET', '/api/ai/user-profile');
+      const profileResponse = await profileResponseRaw.json();
       setUserProfile(profileResponse);
 
       // Generate personalized recommendations
-      const recommendationsResponse = await apiRequest('POST', '/api/ai/recommendations', {
+      const recommendationsResponseRaw = await apiRequest('POST', '/api/ai/recommendations', {
         context: {
           currentLocation,
           timeOfDay: new Date().toLocaleTimeString(),
@@ -140,28 +141,31 @@ export default function PersonalizationDashboard() {
           recentActivity: 'browsing_dashboard'
         }
       });
+      const recommendationsResponse = await recommendationsResponseRaw.json();
       setRecommendations(recommendationsResponse.recommendations);
 
       // Predict user needs for the next week
       const nextWeek = new Date();
       nextWeek.setDate(nextWeek.getDate() + 7);
 
-      const predictionsResponse = await apiRequest('POST', '/api/ai/predict-needs', {
+      const predictionsResponseRaw = await apiRequest('POST', '/api/ai/predict-needs', {
         timeWindow: {
           start: new Date().toISOString(),
           end: nextWeek.toISOString()
         }
       });
+      const predictionsResponse = await predictionsResponseRaw.json();
       setPredictedNeeds(predictionsResponse);
 
       // Get UI adaptations
-      const adaptationsResponse = await apiRequest('POST', '/api/ai/adapt-ui', {
+      const adaptationsResponseRaw = await apiRequest('POST', '/api/ai/adapt-ui', {
         deviceInfo: {
           type: window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop',
           screenSize: `${window.innerWidth}x${window.innerHeight}`,
           capabilities: ['geolocation', 'camera', 'microphone']
         }
       });
+      const adaptationsResponse = await adaptationsResponseRaw.json();
       setUIAdaptations(adaptationsResponse);
 
       toast({
