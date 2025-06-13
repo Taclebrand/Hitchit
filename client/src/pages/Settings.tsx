@@ -4,9 +4,14 @@ import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { UserIcon } from '@/lib/icons';
+import { useAuth } from '@/contexts/AuthContext';
+import { signOutUser } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 const Settings: React.FC = () => {
   const [, setLocation] = useLocation();
+  const { currentUser, userDocument } = useAuth();
+  const { toast } = useToast();
   
   // Settings state
   const [notifications, setNotifications] = useState(true);
@@ -15,17 +20,21 @@ const Settings: React.FC = () => {
   const [biometricLogin, setBiometricLogin] = useState(false);
   const [savePaymentInfo, setSavePaymentInfo] = useState(true);
   
-  // Mock user data
-  const user = {
-    name: 'John Smith',
-    email: 'john.smith@example.com',
-    phone: '+1 (555) 123-4567',
-    avatar: 'https://randomuser.me/api/portraits/men/32.jpg'
-  };
-  
-  const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
-    setLocation('/auth');
+  const handleLogout = async () => {
+    try {
+      await signOutUser();
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout Failed",
+        description: "An error occurred while logging out.",
+        variant: "destructive",
+      });
+    }
   };
   
   const handleEditProfile = () => {
