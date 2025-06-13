@@ -30,7 +30,7 @@ const SocialLogin = ({ onGoogleLogin, onAppleLogin }: SocialLoginProps) => {
       if (error.code === 'auth/unauthorized-domain') {
         toast({
           title: "Domain Not Authorized",
-          description: "This domain is not authorized for Google Sign-In. Please contact support or use email login.",
+          description: "Add this domain to your Firebase Authentication settings under 'Authorized domains'.",
           variant: "destructive",
         });
       } else if (error.code === 'auth/popup-blocked') {
