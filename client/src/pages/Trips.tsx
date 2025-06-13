@@ -428,6 +428,13 @@ const Trips = () => {
           </TabsContent>
         </Tabs>
       </div>
+      
+      <TripShareModal
+        isOpen={shareModal.isOpen}
+        onClose={closeShareModal}
+        tripId={shareModal.tripId}
+        tripDetails={shareModal.tripDetails}
+      />
     </AppLayout>
   );
 };
