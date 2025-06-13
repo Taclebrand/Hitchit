@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { MapPin, Calendar, Users, Car, Clock, Plus } from "lucide-react";
+import { MapPin, Calendar, Users, Car, Clock, Plus, Share2 } from "lucide-react";
+import TripShareModal from "@/components/TripShareModal";
 
 type Trip = {
   id: number;
@@ -43,6 +44,17 @@ const Trips = () => {
     trips: false,
     bookings: false,
     action: false,
+  });
+  const [shareModal, setShareModal] = useState({
+    isOpen: false,
+    tripId: 0,
+    tripDetails: {
+      origin: "",
+      destination: "",
+      departureTime: "",
+      availableSeats: 0,
+      pricePerSeat: 0,
+    }
   });
 
   useEffect(() => {
@@ -210,6 +222,34 @@ const Trips = () => {
     return new Date(dateString).toLocaleString();
   };
 
+  const handleShareTrip = (trip: Trip) => {
+    setShareModal({
+      isOpen: true,
+      tripId: trip.id,
+      tripDetails: {
+        origin: trip.originAddress || trip.originCity,
+        destination: trip.destinationAddress || trip.destinationCity,
+        departureTime: trip.departureDate,
+        availableSeats: trip.availableSeats,
+        pricePerSeat: parseFloat(trip.price),
+      }
+    });
+  };
+
+  const closeShareModal = () => {
+    setShareModal({
+      isOpen: false,
+      tripId: 0,
+      tripDetails: {
+        origin: "",
+        destination: "",
+        departureTime: "",
+        availableSeats: 0,
+        pricePerSeat: 0,
+      }
+    });
+  };
+
   return (
     <AppLayout>
       <div className="container px-4 py-6 max-w-lg mx-auto">
@@ -278,14 +318,25 @@ const Trips = () => {
                     </CardContent>
                     {trip.status === "active" && (
                       <CardFooter className="bg-muted/30 p-3 flex justify-between">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => updateTripStatus(trip.id, "completed")}
-                          disabled={loading.action}
-                        >
-                          Mark Completed
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleShareTrip(trip)}
+                            className="flex items-center gap-1"
+                          >
+                            <Share2 className="h-3 w-3" />
+                            Share
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => updateTripStatus(trip.id, "completed")}
+                            disabled={loading.action}
+                          >
+                            Mark Completed
+                          </Button>
+                        </div>
                         <Button 
                           variant="destructive" 
                           size="sm"

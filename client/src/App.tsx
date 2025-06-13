@@ -18,6 +18,7 @@ import Trips from "@/pages/Trips";
 import DriverSignup from "@/pages/DriverSignup";
 import Activity from "@/pages/Activity";
 import AIFeatures from "@/pages/AIFeatures";
+import SharedTrip from "@/pages/SharedTrip";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import MobileResponsiveTest from "@/components/MobileResponsiveTest";
@@ -78,6 +79,7 @@ function AppRoutes() {
             <Route path="/mobile-test" component={MobileResponsiveTest} />
           </>
         )}
+        <Route path="/shared-trip/:shareCode" component={SharedTrip} />
         <Route component={NotFound} />
       </Switch>
     </TooltipProvider>
