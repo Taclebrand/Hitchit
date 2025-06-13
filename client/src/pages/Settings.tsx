@@ -102,13 +102,17 @@ const Settings: React.FC = () => {
           {/* Profile Card */}
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-6">
             <div className="flex items-center">
-              <div className="w-14 h-14 rounded-full overflow-hidden mr-4">
-                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+              <div className="w-14 h-14 rounded-full overflow-hidden mr-4 bg-gray-200 flex items-center justify-center">
+                {currentUser?.photoURL ? (
+                  <img src={currentUser.photoURL} alt={currentUser.displayName || 'User'} className="w-full h-full object-cover" />
+                ) : (
+                  <UserIcon className="w-8 h-8 text-gray-500" />
+                )}
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-lg">{user.name}</h3>
-                <p className="text-gray-600 text-sm">{user.email}</p>
-                <p className="text-gray-600 text-sm">{user.phone}</p>
+                <h3 className="font-semibold text-lg">{currentUser?.displayName || currentUser?.email || 'User'}</h3>
+                <p className="text-gray-600 text-sm">{currentUser?.email}</p>
+                <p className="text-gray-600 text-sm">{userDocument?.phone || 'No phone number'}</p>
               </div>
               <Button 
                 variant="outline" 

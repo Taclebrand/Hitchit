@@ -1,32 +1,13 @@
-import { useLocation } from "wouter";
-import LoginForm from "@/components/LoginForm";
-import CloudBackground from "@/components/CloudBackground";
+import FirebaseLoginForm from "@/components/FirebaseLoginForm";
 
 export default function Login() {
-  const [, setLocation] = useLocation();
-
-  const handleLoginComplete = () => {
-    setLocation("/home");
-  };
-
-  const handleGoogleLogin = () => {
-    setLocation("/home");
-  };
-
-  const handleAppleLogin = () => {
-    setLocation("/home");
+  const handleSwitchToRegister = () => {
+    window.location.href = '/auth';
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      <CloudBackground />
-      <div className="relative z-10 w-full">
-        <LoginForm 
-          onComplete={handleLoginComplete}
-          onGoogleLogin={handleGoogleLogin}
-          onAppleLogin={handleAppleLogin}
-        />
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-white">
+      <FirebaseLoginForm onSwitchToRegister={handleSwitchToRegister} />
     </div>
   );
 }
