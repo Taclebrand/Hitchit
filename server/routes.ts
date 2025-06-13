@@ -9,6 +9,13 @@ import { ComputerVisionService } from "./ai/computerVision";
 import { IntelligentTripMatchingService } from "./ai/tripMatching";
 import { ConversationalVoiceAssistant } from "./ai/voiceAssistant";
 import { PersonalizationEngine } from "./ai/personalization";
+import multer from "multer";
+
+// Configure multer for handling file uploads
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
 import { eq } from "drizzle-orm";
 import { 
   insertUserSchema, 
@@ -875,7 +882,251 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // We no longer need to add the updateUser method here since it's now properly defined in the storage class
+  // ====== AI API ROUTES ======
+
+  // Computer Vision - Vehicle Verification
+  apiRouter.post("/ai/verify-vehicle", authenticate, upload.single('vehicleImage'), async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Vehicle image is required" });
+      }
+
+      const imageBase64 = req.file.buffer.toString('base64');
+      const expectedVehicleInfo = req.body.expectedVehicleInfo ? JSON.parse(req.body.expectedVehicleInfo) : undefined;
+
+      const result = await ComputerVisionService.verifyVehicle(imageBase64, expectedVehicleInfo);
+      res.json(result);
+    } catch (error) {
+      console.error('Vehicle verification error:', error);
+      res.status(500).json({ message: "Vehicle verification failed" });
+    }
+  });
+
+  // Computer Vision - Safety Analysis
+  apiRouter.post("/ai/analyze-vehicle-safety", authenticate, upload.single('vehicleImage'), async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Vehicle image is required" });
+      }
+
+      const imageBase64 = req.file.buffer.toString('base64');
+      const result = await ComputerVisionService.analyzeVehicleForSafety(imageBase64);
+      res.json(result);
+    } catch (error) {
+      console.error('Safety analysis error:', error);
+      res.status(500).json({ message: "Safety analysis failed" });
+    }
+  });
+
+  // Intelligent Trip Matching
+  apiRouter.post("/ai/find-optimal-trips", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const { riderRequest } = req.body;
+      
+      if (!riderRequest || !riderRequest.pickup || !riderRequest.dropoff) {
+        return res.status(400).json({ message: "Rider request with pickup and dropoff required" });
+      }
+
+      // Get available trips for matching
+      const availableTrips = await storage.getActiveTrips();
+      
+      const matches = await IntelligentTripMatchingService.findOptimalMatches(riderRequest, availableTrips);
+      res.json({ matches });
+    } catch (error) {
+      console.error('Trip matching error:', error);
+      res.status(500).json({ message: "Trip matching failed" });
+    }
+  });
+
+  // Route Optimization
+  apiRouter.post("/ai/optimize-route/:tripId", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const tripId = parseInt(req.params.tripId);
+      const { newBooking } = req.body;
+
+      const trip = await storage.getTrip(tripId);
+      if (!trip) {
+        return res.status(404).json({ message: "Trip not found" });
+      }
+
+      const bookings = await storage.getBookingsByTripId(tripId);
+      const optimization = await IntelligentTripMatchingService.optimizeRoute(trip, bookings, newBooking);
+      
+      res.json(optimization);
+    } catch (error) {
+      console.error('Route optimization error:', error);
+      res.status(500).json({ message: "Route optimization failed" });
+    }
+  });
+
+  // Trip Demand Analysis
+  apiRouter.post("/ai/analyze-trip-demand", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const { route, timeWindow } = req.body;
+      
+      if (!route || !timeWindow) {
+        return res.status(400).json({ message: "Route and time window required" });
+      }
+
+      const analysis = await IntelligentTripMatchingService.analyzeTripDemand(route, timeWindow);
+      res.json(analysis);
+    } catch (error) {
+      console.error('Demand analysis error:', error);
+      res.status(500).json({ message: "Demand analysis failed" });
+    }
+  });
+
+  // Voice Assistant - Process Voice Input
+  apiRouter.post("/ai/process-voice", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const { transcript, conversationHistory, currentBookingSession } = req.body;
+      
+      if (!transcript) {
+        return res.status(400).json({ message: "Voice transcript required" });
+      }
+
+      const context = {
+        userId: req.user!.id,
+        conversationHistory: conversationHistory || [],
+        currentBookingSession
+      };
+
+      const intent = await ConversationalVoiceAssistant.processVoiceInput(transcript, context);
+      res.json(intent);
+    } catch (error) {
+      console.error('Voice processing error:', error);
+      res.status(500).json({ message: "Voice processing failed" });
+    }
+  });
+
+  // Voice Assistant - Generate Suggestions
+  apiRouter.post("/ai/voice-suggestions", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const { conversationHistory, currentIntent } = req.body;
+      
+      const context = {
+        userId: req.user!.id,
+        conversationHistory: conversationHistory || []
+      };
+
+      const suggestions = await ConversationalVoiceAssistant.generateSmartSuggestions(context, currentIntent);
+      res.json(suggestions);
+    } catch (error) {
+      console.error('Suggestion generation error:', error);
+      res.status(500).json({ message: "Suggestion generation failed" });
+    }
+  });
+
+  // Voice Assistant - Speech to Text
+  apiRouter.post("/ai/speech-to-text", authenticate, upload.single('audio'), async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Audio file required" });
+      }
+
+      const audioBlob = new Blob([req.file.buffer], { type: 'audio/webm' });
+      const transcript = await ConversationalVoiceAssistant.convertSpeechToText(audioBlob);
+      
+      res.json({ transcript });
+    } catch (error) {
+      console.error('Speech to text error:', error);
+      res.status(500).json({ message: "Speech to text failed" });
+    }
+  });
+
+  // Voice Assistant - Text to Speech
+  apiRouter.post("/ai/text-to-speech", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const { text } = req.body;
+      
+      if (!text) {
+        return res.status(400).json({ message: "Text required" });
+      }
+
+      const audioBuffer = await ConversationalVoiceAssistant.generateSpeechResponse(text);
+      
+      res.setHeader('Content-Type', 'audio/mpeg');
+      res.send(Buffer.from(audioBuffer));
+    } catch (error) {
+      console.error('Text to speech error:', error);
+      res.status(500).json({ message: "Text to speech failed" });
+    }
+  });
+
+  // Voice Assistant - Multi-turn Conversation
+  apiRouter.post("/ai/conversation", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const { messages } = req.body;
+      
+      if (!messages || !Array.isArray(messages)) {
+        return res.status(400).json({ message: "Messages array required" });
+      }
+
+      const result = await ConversationalVoiceAssistant.handleMultiTurnConversation(messages, req.user!.id);
+      res.json(result);
+    } catch (error) {
+      console.error('Conversation error:', error);
+      res.status(500).json({ message: "Conversation handling failed" });
+    }
+  });
+
+  // Personalization Engine - User Profile
+  apiRouter.get("/ai/user-profile", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const profile = await PersonalizationEngine.buildUserProfile(req.user!.id);
+      res.json(profile);
+    } catch (error) {
+      console.error('Profile building error:', error);
+      res.status(500).json({ message: "Profile building failed" });
+    }
+  });
+
+  // Personalization Engine - Recommendations
+  apiRouter.post("/ai/recommendations", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const { context } = req.body;
+      
+      const recommendations = await PersonalizationEngine.generatePersonalizedRecommendations(req.user!.id, context);
+      res.json({ recommendations });
+    } catch (error) {
+      console.error('Recommendation error:', error);
+      res.status(500).json({ message: "Recommendation generation failed" });
+    }
+  });
+
+  // Personalization Engine - Predict User Needs
+  apiRouter.post("/ai/predict-needs", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const { timeWindow } = req.body;
+      
+      if (!timeWindow || !timeWindow.start || !timeWindow.end) {
+        return res.status(400).json({ message: "Time window with start and end required" });
+      }
+
+      const predictions = await PersonalizationEngine.predictUserNeeds(req.user!.id, {
+        start: new Date(timeWindow.start),
+        end: new Date(timeWindow.end)
+      });
+      
+      res.json(predictions);
+    } catch (error) {
+      console.error('Prediction error:', error);
+      res.status(500).json({ message: "Prediction failed" });
+    }
+  });
+
+  // Personalization Engine - UI Adaptation
+  apiRouter.post("/ai/adapt-ui", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      const { deviceInfo } = req.body;
+      
+      const adaptations = await PersonalizationEngine.adaptUserInterface(req.user!.id, deviceInfo);
+      res.json(adaptations);
+    } catch (error) {
+      console.error('UI adaptation error:', error);
+      res.status(500).json({ message: "UI adaptation failed" });
+    }
+  });
 
   // Mount API router
   app.use("/api", apiRouter);

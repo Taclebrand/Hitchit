@@ -200,7 +200,7 @@ Return JSON array of recommendations with: {
       let recommendations;
       try {
         const content = response.content[0];
-        if (content.type === 'text') {
+        if ('text' in content) {
           const parsed = JSON.parse(content.text);
           recommendations = Array.isArray(parsed) ? parsed : parsed.recommendations || [];
         } else {
@@ -301,7 +301,7 @@ Return JSON with: {
       let predictions;
       try {
         const content = response.content[0];
-        if (content.type === 'text') {
+        if ('text' in content) {
           predictions = JSON.parse(content.text);
         } else {
           predictions = { likelyBookings: [], priceAlerts: [], behaviorInsights: [] };
@@ -380,7 +380,7 @@ Return JSON with interface adaptation recommendations.`
       let adaptations;
       try {
         const content = response.content[0];
-        if (content.type === 'text') {
+        if ('text' in content) {
           adaptations = JSON.parse(content.text);
         } else {
           adaptations = {};
