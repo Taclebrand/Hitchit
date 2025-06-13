@@ -186,21 +186,24 @@ export default function VoiceAssistant() {
       setConversationHistory(prev => [...prev, userMessage]);
 
       // Process voice input to understand intent
-      const intentResponse = await apiRequest('POST', '/api/ai/process-voice', {
+      const intentResponseRaw = await apiRequest('POST', '/api/ai/process-voice', {
         transcript,
         conversationHistory: conversationHistory.slice(-10), // Last 10 messages for context
         currentBookingSession: bookingProgress
       });
 
+      const intentResponse = await intentResponseRaw.json();
       setCurrentIntent(intentResponse);
 
       // Handle multi-turn conversation
-      const conversationResponse = await apiRequest('POST', '/api/ai/conversation', {
+      const conversationResponseRaw = await apiRequest('POST', '/api/ai/conversation', {
         messages: [...conversationHistory, userMessage].slice(-10).map(msg => ({
           role: msg.role,
           content: msg.content
         }))
       });
+
+      const conversationResponse = await conversationResponseRaw.json();
 
       // Add assistant response to conversation
       const assistantMessage: ConversationMessage = {
@@ -214,10 +217,11 @@ export default function VoiceAssistant() {
 
       // Generate suggestions for quick actions
       if (intentResponse.confidence > 0.5) {
-        const suggestionsResponse = await apiRequest('POST', '/api/ai/voice-suggestions', {
+        const suggestionsResponseRaw = await apiRequest('POST', '/api/ai/voice-suggestions', {
           conversationHistory: conversationHistory.slice(-5),
           currentIntent: intentResponse
         });
+        const suggestionsResponse = await suggestionsResponseRaw.json();
         setSuggestions(suggestionsResponse);
       }
 
@@ -281,12 +285,14 @@ export default function VoiceAssistant() {
     setIsProcessing(true);
 
     try {
-      const conversationResponse = await apiRequest('POST', '/api/ai/conversation', {
+      const conversationResponseRaw = await apiRequest('POST', '/api/ai/conversation', {
         messages: [...conversationHistory, { role: 'user', content: text }].slice(-10).map(msg => ({
           role: msg.role,
           content: msg.content
         }))
       });
+
+      const conversationResponse = await conversationResponseRaw.json();
 
       const assistantMessage: ConversationMessage = {
         role: 'assistant',
