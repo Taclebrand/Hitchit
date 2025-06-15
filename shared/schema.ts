@@ -109,7 +109,7 @@ export const insertTripSchema = createInsertSchema(trips).pick({
   originLng: z.coerce.number(), // Accept string and convert to number
   destinationLat: z.coerce.number(), // Accept string and convert to number
   destinationLng: z.coerce.number(), // Accept string and convert to number
-  departureDate: z.string().transform(str => new Date(str)), // Convert string to Date
+  departureDate: z.string().or(z.date()).transform(val => typeof val === 'string' ? new Date(val) : val), // Accept string or Date
 });
 
 // Bookings Table

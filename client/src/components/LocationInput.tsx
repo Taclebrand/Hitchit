@@ -111,7 +111,12 @@ export const LocationInput: React.FC<LocationInputProps> = ({
       console.log('Getting address for coordinates:', latitude, longitude);
 
       // Use Mapbox Geocoding API for reverse geocoding
-      const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN || 'pk.eyJ1IjoidGFjbGVicmFuZCIsImEiOiJjbWF2bHYyY3IwNjhkMnlwdXA4emFydjllIn0.ve6FSKPekZ-zr7cZzWoIUw';
+      const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN;
+      
+      if (!mapboxToken) {
+        throw new Error('Mapbox token not configured. Please add VITE_MAPBOX_TOKEN to your environment.');
+      }
+      
       const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&types=address,poi`;
       
       const response = await fetch(geocodingUrl);

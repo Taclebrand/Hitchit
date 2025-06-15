@@ -64,9 +64,12 @@ class GoogleMapsService {
       const script = document.createElement('script');
       
       // Get API key from environment variables (Vite uses import.meta.env)
-      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 
-                    import.meta.env.GOOGLE_MAPS_API_KEY;
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
       console.log("Using Google Maps with API key present:", !!apiKey);
+      
+      if (!apiKey) {
+        throw new Error('Google Maps API key not configured. Please add VITE_GOOGLE_MAPS_API_KEY to your environment.');
+      }
       
       script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
       script.async = true;
