@@ -25,6 +25,7 @@ import DriverPricingTest from "@/pages/DriverPricingTest";
 import Checkout from "@/pages/checkout";
 import PaymentSuccess from "@/pages/payment-success";
 import DriverDashboard from "@/pages/DriverDashboard";
+import VehicleManager from "@/pages/VehicleManager";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import MobileResponsiveTest from "@/components/MobileResponsiveTest";
@@ -84,6 +85,7 @@ function AppRoutes() {
           <Route path="/checkout" component={Checkout} />
           <Route path="/payment-success" component={PaymentSuccess} />
           <Route path="/driver-dashboard" component={DriverDashboard} />
+          <Route path="/vehicle-manager" component={VehicleManager} />
             <Route path="/create-trip" component={CreateTrip} />
             <Route path="/search-trips" component={SearchTrips} />
             <Route path="/trips" component={Trips} />
