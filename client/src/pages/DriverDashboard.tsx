@@ -17,6 +17,7 @@ import {
   CheckCircle,
   AlertCircle
 } from "lucide-react";
+import VehicleSwitcher from "@/components/VehicleSwitcher";
 
 interface PaymentMethod {
   id: number;
@@ -234,6 +235,9 @@ export default function DriverDashboard() {
           <p className="text-gray-600 mt-2">Manage your vehicles, earnings, and payments</p>
         </div>
 
+        {/* Quick Vehicle Switcher */}
+        <VehicleSwitcher showActiveOnly={true} />
+
         <Tabs defaultValue="earnings" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="earnings">Earnings</TabsTrigger>
@@ -328,6 +332,9 @@ export default function DriverDashboard() {
           </TabsContent>
 
           <TabsContent value="vehicles" className="space-y-4">
+            {/* Vehicle Profile Switcher */}
+            <VehicleSwitcher />
+
             <Card>
               <CardHeader>
                 <CardTitle>Register New Vehicle</CardTitle>

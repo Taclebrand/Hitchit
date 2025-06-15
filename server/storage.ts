@@ -36,6 +36,7 @@ export interface IStorage {
   getUserByPhone(phone: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, data: Partial<User>): Promise<User | undefined>;
+  setActiveVehicle(userId: number, vehicleId: number): Promise<User | undefined>;
 
   // Authentication operations
   createVerificationCode(code: InsertVerificationCode): Promise<VerificationCode>;
