@@ -142,11 +142,14 @@ const CreateTrip = () => {
         driverId: 1, // Adding a driver ID for the demo
       };
       
+      // Get auth token from localStorage or use demo token
+      const authToken = localStorage.getItem('auth_token') || 'demo-token';
+      
       const response = await fetch("/api/trips", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer demo-token" // Demo auth token
+          "Authorization": `Bearer ${authToken}`
         },
         body: JSON.stringify(enhancedData),
       });

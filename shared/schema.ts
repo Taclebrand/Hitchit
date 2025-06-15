@@ -103,6 +103,13 @@ export const insertTripSchema = createInsertSchema(trips).pick({
   departureDate: true,
   price: true,
   availableSeats: true,
+}).extend({
+  driverId: z.number().optional(), // Will be set server-side from auth
+  originLat: z.coerce.number(), // Accept string and convert to number
+  originLng: z.coerce.number(), // Accept string and convert to number
+  destinationLat: z.coerce.number(), // Accept string and convert to number
+  destinationLng: z.coerce.number(), // Accept string and convert to number
+  departureDate: z.string().transform(str => new Date(str)), // Convert string to Date
 });
 
 // Bookings Table
