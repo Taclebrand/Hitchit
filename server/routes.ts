@@ -81,6 +81,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         authProvider: 'local',
         stripeCustomerId: null,
         stripeConnectAccountId: 'acct_test123',
+        providerId: null,
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -381,6 +382,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Driver Earnings Routes
+
+  // Add test earnings for demo purposes
+  apiRouter.post("/driver/add-test-earnings", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user!.isDriver) {
+        return res.status(403).json({ success: false, message: "Access denied" });
+      }
+
+      // Add some test earnings
+      const earning1 = await storage.createEarning({
+        driverId: req.user!.id,
+        tripId: 1,
+        amount: "45.00",
+        platformFee: "4.50", 
+        netAmount: "40.50"
+      });
+
+      const earning2 = await storage.createEarning({
+        driverId: req.user!.id,
+        tripId: 2,
+        amount: "32.75",
+        platformFee: "3.28",
+        netAmount: "29.47"
+      });
+
+      res.json({ 
+        success: true, 
+        message: "Test earnings added",
+        earnings: [earning1, earning2] 
+      });
+    } catch (error) {
+      console.error("Add test earnings error:", error);
+      res.status(500).json({ success: false, message: "Failed to add test earnings" });
+    }
+  });
 
   // Get driver earnings
   apiRouter.get("/driver/earnings", authenticate, async (req: AuthRequest, res: Response) => {

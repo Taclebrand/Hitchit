@@ -228,6 +228,9 @@ export const insertDriverEarningsSchema = createInsertSchema(driverEarnings).pic
   amount: true,
   platformFee: true,
   netAmount: true,
+}).extend({
+  grossAmount: z.string().optional(),
+  status: z.string().optional(),
 });
 
 export const insertDriverWithdrawalSchema = createInsertSchema(driverWithdrawals).pick({
