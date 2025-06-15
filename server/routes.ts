@@ -4,6 +4,7 @@ import { createServer, type Server } from "http";
 import jwt from "jsonwebtoken";
 import QRCode from "qrcode";
 import { nanoid } from "nanoid";
+import Stripe from "stripe";
 import { storage } from "./storage";
 import { db } from "./db";
 import { AuthService } from "./auth";
@@ -17,6 +18,14 @@ import multer from "multer";
 const upload = multer({ 
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+
+// Initialize Stripe
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+}
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2023-10-16",
 });
 import { eq } from "drizzle-orm";
 import { 
@@ -1309,6 +1318,168 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('UI adaptation error:', error);
       res.status(500).json({ message: "UI adaptation failed" });
+    }
+  });
+
+  // Stripe payment endpoints
+  
+  // Create payment intent for rides and packages
+  apiRouter.post("/create-payment-intent", async (req: Request, res: Response) => {
+    try {
+      const { amount, currency = "usd", description } = req.body;
+      
+      if (!amount || amount < 0.50) {
+        return res.status(400).json({ message: "Amount must be at least $0.50" });
+      }
+      
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Convert to cents
+        currency,
+        description: description || "HitchIt Service Payment",
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
+      
+      res.json({ 
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id
+      });
+    } catch (error: any) {
+      console.error("Payment intent creation error:", error);
+      res.status(500).json({ 
+        message: "Error creating payment intent", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Create connected account for drivers
+  apiRouter.post("/create-driver-account", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user!.isDriver) {
+        return res.status(403).json({ message: "Access denied - driver account required" });
+      }
+
+      const account = await stripe.accounts.create({
+        type: 'express',
+        country: 'US',
+        email: req.user!.email,
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+      });
+
+      // Update user with Stripe account ID
+      await storage.updateUser(req.user!.id, { 
+        stripeConnectAccountId: account.id 
+      });
+
+      res.json({ 
+        success: true, 
+        accountId: account.id,
+        message: "Driver Stripe account created successfully" 
+      });
+    } catch (error: any) {
+      console.error("Driver account creation error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Error creating driver account",
+        error: error.message 
+      });
+    }
+  });
+
+  // Process driver payout
+  apiRouter.post("/driver-payout", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user!.isDriver || !req.user!.stripeConnectAccountId) {
+        return res.status(403).json({ 
+          message: "Driver account with connected Stripe account required" 
+        });
+      }
+
+      const { amount } = req.body;
+      
+      if (!amount || amount < 20) {
+        return res.status(400).json({ 
+          message: "Minimum payout amount is $20" 
+        });
+      }
+
+      // Check available earnings
+      const availableEarnings = await storage.getAvailableEarnings(req.user!.id);
+      if (amount > availableEarnings) {
+        return res.status(400).json({ 
+          message: "Insufficient available earnings for payout" 
+        });
+      }
+
+      // Create transfer to connected account
+      const transfer = await stripe.transfers.create({
+        amount: Math.round(amount * 100), // Convert to cents
+        currency: 'usd',
+        destination: req.user!.stripeConnectAccountId,
+        description: `HitchIt driver payout for ${req.user!.username}`,
+      });
+
+      // Record the withdrawal  
+      const withdrawal = await storage.createWithdrawal({
+        driverId: req.user!.id,
+        amount: amount.toString(),
+        bankAccount: req.user!.stripeConnectAccountId,
+        status: 'completed',
+        transferId: transfer.id,
+      });
+
+      res.json({ 
+        success: true, 
+        withdrawal,
+        transferId: transfer.id,
+        message: "Payout processed successfully" 
+      });
+    } catch (error: any) {
+      console.error("Driver payout error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Error processing payout",
+        error: error.message 
+      });
+    }
+  });
+
+  // Get driver account status
+  apiRouter.get("/driver-account-status", authenticate, async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user!.isDriver) {
+        return res.status(403).json({ message: "Driver account required" });
+      }
+
+      if (!req.user!.stripeConnectAccountId) {
+        return res.json({ 
+          hasAccount: false, 
+          message: "No connected Stripe account found" 
+        });
+      }
+
+      const account = await stripe.accounts.retrieve(req.user!.stripeConnectAccountId);
+      
+      res.json({ 
+        hasAccount: true,
+        accountId: account.id,
+        detailsSubmitted: account.details_submitted,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        requirements: account.requirements
+      });
+    } catch (error: any) {
+      console.error("Driver account status error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Error retrieving account status",
+        error: error.message 
+      });
     }
   });
 
