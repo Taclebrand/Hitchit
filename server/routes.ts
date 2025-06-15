@@ -552,26 +552,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Register a vehicle - temporarily allowing unauthenticated requests for demo purposes
-  apiRouter.post("/vehicles", async (req: Request, res: Response) => {
+  // Register a vehicle
+  apiRouter.post("/vehicles", authenticate, async (req: AuthRequest, res: Response) => {
     try {
-      // Parse the vehicle data directly from the request body
-      const vehicleData = insertVehicleSchema.parse(req.body);
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      // Parse the vehicle data and add the user ID
+      const vehicleData = insertVehicleSchema.parse({
+        ...req.body,
+        userId: req.user.id
+      });
+      
+      console.log("Registering vehicle:", vehicleData);
       
       // Create the vehicle
       const newVehicle = await storage.createVehicle(vehicleData);
       
-      // Update the user to be a driver if user ID is provided
-      if (vehicleData.userId) {
-        await storage.updateUser(vehicleData.userId, { isDriver: true });
-      }
+      // Update the user to be a driver
+      await storage.updateUser(req.user.id, { isDriver: true });
       
+      console.log("Vehicle registered successfully:", newVehicle);
       return res.status(201).json(newVehicle);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid request body", errors: error.errors });
-      }
       console.error("Vehicle registration error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Invalid vehicle data", 
+          errors: error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message
+          }))
+        });
+      }
       return res.status(500).json({ message: "Failed to register vehicle" });
     }
   });

@@ -57,40 +57,120 @@ export const LocationInput: React.FC<LocationInputProps> = ({
 
   const getCurrentLocation = async () => {
     setIsLoadingLocation(true);
+    
     try {
+      // Check if geolocation is available
       if (!navigator.geolocation) {
-        throw new Error('Geolocation not supported');
+        throw new Error('Geolocation is not supported by this browser');
       }
 
+      // Request permission explicitly
+      if ('permissions' in navigator) {
+        const permission = await navigator.permissions.query({name: 'geolocation'});
+        if (permission.state === 'denied') {
+          throw new Error('Location access denied. Please enable location in your browser settings.');
+        }
+      }
+
+      console.log('Requesting current location...');
+      
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        });
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            console.log('Location obtained:', pos.coords.latitude, pos.coords.longitude);
+            resolve(pos);
+          },
+          (error) => {
+            console.error('Geolocation error:', error);
+            let message = 'Unable to get location: ';
+            switch(error.code) {
+              case error.PERMISSION_DENIED:
+                message += 'Location access denied by user';
+                break;
+              case error.POSITION_UNAVAILABLE:
+                message += 'Location information unavailable';
+                break;
+              case error.TIMEOUT:
+                message += 'Location request timed out';
+                break;
+              default:
+                message += 'Unknown error occurred';
+                break;
+            }
+            reject(new Error(message));
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 30000
+          }
+        );
       });
 
       const { latitude, longitude } = position.coords;
+      console.log('Getting address for coordinates:', latitude, longitude);
 
       // Use Mapbox Geocoding API for reverse geocoding
       const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN || 'pk.eyJ1IjoidGFjbGVicmFuZCIsImEiOiJjbWF2bHYyY3IwNjhkMnlwdXA4emFydjllIn0.ve6FSKPekZ-zr7cZzWoIUw';
-      const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&types=address`;
+      const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&types=address,poi`;
       
       const response = await fetch(geocodingUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Geocoding API error: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('Mapbox response:', data);
       
       if (data.features && data.features.length > 0) {
         const feature = data.features[0];
         const formattedAddress = feature.place_name;
         
-        // Parse detailed address components
-        const addressComponents = feature.place_name.split(', ');
+        // Parse detailed address components from Mapbox response
+        let street = '';
+        let city = '';
+        let state = '';
+        let zipCode = '';
+        
+        // Extract from place_name (usually: "123 Main St, City, State ZIP, Country")
+        const parts = feature.place_name.split(', ');
+        if (parts.length >= 3) {
+          street = parts[0];
+          city = parts[1];
+          
+          // Handle "State ZIP" format
+          const stateZipPart = parts[2];
+          const stateZipMatch = stateZipPart.match(/^(.+?)\s+(\d{5}(?:-\d{4})?)$/);
+          if (stateZipMatch) {
+            state = stateZipMatch[1];
+            zipCode = stateZipMatch[2];
+          } else {
+            state = stateZipPart;
+          }
+        }
+        
+        // Also try to extract from context array
+        if (feature.context) {
+          for (const context of feature.context) {
+            if (context.id.startsWith('place.') && !city) {
+              city = context.text;
+            } else if (context.id.startsWith('region.') && !state) {
+              state = context.short_code?.replace('US-', '') || context.text;
+            } else if (context.id.startsWith('postcode.') && !zipCode) {
+              zipCode = context.text;
+            }
+          }
+        }
+
         const detailedAddress: Address = {
-          street: addressComponents[0] || '',
-          city: feature.context?.find((c: any) => c.id.startsWith('place.'))?.text || addressComponents[1] || '',
-          state: feature.context?.find((c: any) => c.id.startsWith('region.'))?.short_code?.replace('US-', '') || '',
-          zipCode: feature.context?.find((c: any) => c.id.startsWith('postcode.'))?.text || ''
+          street: street || 'Current Location',
+          city: city || 'Unknown City',
+          state: state || 'Unknown State',
+          zipCode: zipCode || ''
         };
+
+        console.log('Parsed address:', detailedAddress);
 
         onChange({
           address: formattedAddress,
@@ -100,16 +180,16 @@ export const LocationInput: React.FC<LocationInputProps> = ({
 
         toast({
           title: "Location Found",
-          description: "Using your current location",
+          description: `Using ${street || 'your current location'}`,
         });
       } else {
-        throw new Error('No address found');
+        throw new Error('No address found for your location');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Location error:', error);
       toast({
         title: "Location Error",
-        description: "Could not get your location. Please enter manually.",
+        description: error.message || "Could not get your location. Please enter manually.",
         variant: "destructive"
       });
     } finally {
@@ -217,7 +297,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({
             </div>
             
             <Input
-              placeholder="Street Address"
+              placeholder="Street Address (e.g., 123 Main Street)"
               value={manualAddress.street}
               onChange={(e) => handleManualAddressChange('street', e.target.value)}
             />
@@ -229,16 +309,18 @@ export const LocationInput: React.FC<LocationInputProps> = ({
                 onChange={(e) => handleManualAddressChange('city', e.target.value)}
               />
               <Input
-                placeholder="State"
+                placeholder="State (e.g., CA)"
                 value={manualAddress.state}
                 onChange={(e) => handleManualAddressChange('state', e.target.value)}
+                maxLength={2}
               />
             </div>
             
             <Input
-              placeholder="ZIP Code"
+              placeholder="ZIP Code (e.g., 90210)"
               value={manualAddress.zipCode}
               onChange={(e) => handleManualAddressChange('zipCode', e.target.value)}
+              maxLength={10}
             />
           </div>
         )}

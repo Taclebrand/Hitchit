@@ -55,7 +55,6 @@ export const vehicles = pgTable("vehicles", {
 });
 
 export const insertVehicleSchema = createInsertSchema(vehicles).pick({
-  userId: true,
   type: true,
   make: true,
   model: true,
@@ -63,6 +62,8 @@ export const insertVehicleSchema = createInsertSchema(vehicles).pick({
   color: true,
   licensePlate: true,
   seats: true,
+}).extend({
+  userId: z.number().optional(), // Will be set server-side from auth
 });
 
 // Trips Table
