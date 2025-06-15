@@ -72,13 +72,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: 1,
         username: 'testuser',
         email: 'test@example.com',
+        password: null,
+        fullName: 'Test User',
+        phone: null,
+        avatar: null,
         isDriver: true,
-        createdAt: new Date()
+        isVerified: true,
+        authProvider: 'local',
+        stripeCustomerId: null,
+        stripeConnectAccountId: 'acct_test123',
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
       return next();
     }
-    const token = req.headers.authorization?.replace("Bearer ", "");
     
+    if (!authHeader) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const token = authHeader.split(" ")[1];
     if (!token) {
       return res.status(401).json({ message: "Authentication required" });
     }
@@ -86,18 +99,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const decoded = AuthService.verifyToken(token);
       if (!decoded) {
-        return res.status(401).json({ message: "Invalid token" });
+        return res.status(401).json({ message: "Authentication required" });
       }
       
       const user = await storage.getUser(decoded.userId);
       if (!user) {
-        return res.status(401).json({ message: "Invalid token" });
+        return res.status(401).json({ message: "Authentication required" });
       }
       
       req.user = user;
       next();
     } catch (error) {
-      return res.status(401).json({ message: "Invalid token" });
+      return res.status(401).json({ message: "Authentication required" });
     }
   };
 
@@ -574,17 +587,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Register a vehicle (temporarily without auth for testing)
-  apiRouter.post("/vehicles", async (req: Request, res: Response) => {
+  // Register a vehicle
+  apiRouter.post("/vehicles", authenticate, async (req: AuthRequest, res: Response) => {
     try {
-      // For testing, use a default user ID
-      const userId = 1;
+      if (!req.user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
 
       // Parse the vehicle data without userId first, then add it
       const vehicleInput = insertVehicleSchema.omit({ userId: true }).parse(req.body);
       const vehicleData = {
         ...vehicleInput,
-        userId: userId
+        userId: req.user.id
       };
       
       console.log("Registering vehicle:", vehicleData);
@@ -593,7 +607,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newVehicle = await storage.createVehicle(vehicleData);
       
       // Update the user to be a driver
-      await storage.updateUser(userId, { isDriver: true });
+      await storage.updateUser(req.user.id, { isDriver: true });
       
       console.log("Vehicle registered successfully:", newVehicle);
       return res.status(201).json(newVehicle);
