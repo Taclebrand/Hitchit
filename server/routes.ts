@@ -600,17 +600,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Authentication required" });
       }
 
-      // Parse the vehicle data without userId first, then add it
-      const vehicleInput = insertVehicleSchema.omit({ userId: true }).parse(req.body);
-      const vehicleData = {
-        ...vehicleInput,
-        userId: req.user.id
+      // Transform string inputs to proper types before validation
+      const transformedData = {
+        ...req.body,
+        userId: req.user.id,
+        year: parseInt(req.body.year),
+        seats: parseInt(req.body.seats)
       };
       
-      console.log("Registering vehicle:", vehicleData);
+      console.log("Transformed vehicle data:", transformedData);
       
       // Create the vehicle
-      const newVehicle = await storage.createVehicle(vehicleData);
+      const newVehicle = await storage.createVehicle(transformedData);
       
       // Update the user to be a driver
       await storage.updateUser(req.user.id, { isDriver: true });

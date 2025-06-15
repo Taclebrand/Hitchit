@@ -65,6 +65,8 @@ export const insertVehicleSchema = createInsertSchema(vehicles).pick({
   seats: true,
 }).extend({
   userId: z.number().optional(), // Will be set server-side from auth
+  year: z.number(), // Ensure year is a number
+  seats: z.number(), // Ensure seats is a number
 });
 
 // Trips Table
