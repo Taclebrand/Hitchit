@@ -22,6 +22,8 @@ import SharedTrip from "@/pages/SharedTrip";
 import Notifications from "@/pages/Notifications";
 import PaymentSettings from "@/pages/PaymentSettings";
 import DriverPricingTest from "@/pages/DriverPricingTest";
+import Checkout from "@/pages/checkout";
+import PaymentSuccess from "@/pages/payment-success";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import MobileResponsiveTest from "@/components/MobileResponsiveTest";
@@ -78,6 +80,8 @@ function AppRoutes() {
             <Route path="/notifications" component={Notifications} />
             <Route path="/payment-settings" component={PaymentSettings} />
             <Route path="/driver-pricing-test" component={DriverPricingTest} />
+          <Route path="/checkout" component={Checkout} />
+          <Route path="/payment-success" component={PaymentSuccess} />
             <Route path="/create-trip" component={CreateTrip} />
             <Route path="/search-trips" component={SearchTrips} />
             <Route path="/trips" component={Trips} />

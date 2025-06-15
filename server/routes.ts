@@ -1429,8 +1429,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         driverId: req.user!.id,
         amount: amount.toString(),
         bankAccount: req.user!.stripeConnectAccountId,
-        status: 'completed',
-        transferId: transfer.id,
       });
 
       res.json({ 

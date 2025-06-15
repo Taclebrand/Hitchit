@@ -234,6 +234,9 @@ export const insertDriverWithdrawalSchema = createInsertSchema(driverWithdrawals
   driverId: true,
   amount: true,
   bankAccount: true,
+}).extend({
+  status: z.string().optional(),
+  transferId: z.string().optional(),
 });
 
 export const insertPricingSuggestionSchema = createInsertSchema(pricingSuggestions).pick({
