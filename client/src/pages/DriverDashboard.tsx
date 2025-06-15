@@ -74,32 +74,24 @@ export default function DriverDashboard() {
   // Fetch driver earnings
   const { data: earningsData } = useQuery({
     queryKey: ['/api/driver/earnings'],
-    queryFn: () => apiRequest('GET', '/api/driver/earnings', undefined, {
-      'Authorization': 'Bearer test-token'
-    }).then(res => res.json())
+    queryFn: () => apiRequest('GET', '/api/driver/earnings').then(res => res.json())
   });
 
   // Fetch payment methods
   const { data: paymentData } = useQuery({
     queryKey: ['/api/payment-methods'],
-    queryFn: () => apiRequest('GET', '/api/payment-methods', undefined, {
-      'Authorization': 'Bearer test-token'
-    }).then(res => res.json())
+    queryFn: () => apiRequest('GET', '/api/payment-methods').then(res => res.json())
   });
 
   // Fetch vehicles
   const { data: vehiclesData } = useQuery({
     queryKey: ['/api/vehicles/user/1'],
-    queryFn: () => apiRequest('GET', '/api/vehicles/user/1', undefined, {
-      'Authorization': 'Bearer test-token'
-    }).then(res => res.json())
+    queryFn: () => apiRequest('GET', '/api/vehicles/user/1').then(res => res.json())
   });
 
   // Add test earnings mutation
   const addTestEarningsMutation = useMutation({
-    mutationFn: () => apiRequest('POST', '/api/driver/add-test-earnings', {}, {
-      'Authorization': 'Bearer test-token'
-    }).then(res => res.json()),
+    mutationFn: () => apiRequest('POST', '/api/driver/add-test-earnings', {}).then(res => res.json()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/driver/earnings'] });
       toast({
@@ -122,8 +114,6 @@ export default function DriverDashboard() {
       type: 'card',
       stripePaymentMethodId: `pm_test_${Date.now()}`,
       ...data
-    }, {
-      'Authorization': 'Bearer test-token'
     }).then(res => res.json()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/payment-methods'] });
@@ -144,9 +134,7 @@ export default function DriverDashboard() {
 
   // Register vehicle mutation
   const registerVehicleMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('POST', '/api/vehicles', data, {
-      'Authorization': 'Bearer test-token'
-    }).then(res => res.json()),
+    mutationFn: (data: any) => apiRequest('POST', '/api/vehicles', data).then(res => res.json()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/vehicles/user/1'] });
       setVehicleForm({
@@ -174,9 +162,7 @@ export default function DriverDashboard() {
 
   // Process withdrawal mutation
   const withdrawMutation = useMutation({
-    mutationFn: (amount: number) => apiRequest('POST', '/api/driver-payout', { amount }, {
-      'Authorization': 'Bearer test-token'
-    }).then(res => res.json()),
+    mutationFn: (amount: number) => apiRequest('POST', '/api/driver-payout', { amount }).then(res => res.json()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/driver/earnings'] });
       setWithdrawAmount('');
