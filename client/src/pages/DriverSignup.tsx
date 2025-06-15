@@ -68,7 +68,7 @@ const vehicleSchema = z.object({
   year: z.string().min(4, "Year is required"),
   color: z.string().min(2, "Color is required"),
   licensePlate: z.string().min(2, "License plate is required"),
-  seats: z.string().min(1, "Number of seats is required"),
+  seats: z.number().min(1, "Number of seats is required"),
 });
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>;
@@ -150,7 +150,7 @@ const DriverSignup = () => {
       year: "2023",
       color: "",
       licensePlate: "",
-      seats: "4",
+      seats: 4,
     },
   });
 

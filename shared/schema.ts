@@ -21,6 +21,7 @@ export const users = pgTable("users", {
   providerId: text("provider_id"), // OAuth provider ID
   stripeCustomerId: text("stripe_customer_id"),
   stripeConnectAccountId: text("stripe_connect_account_id"), // For drivers
+  activeVehicleId: integer("active_vehicle_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
