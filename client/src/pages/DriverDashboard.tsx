@@ -18,6 +18,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import VehicleSwitcher from "@/components/VehicleSwitcher";
+import ActiveVehicleDisplay from "@/components/ActiveVehicleDisplay";
 
 interface PaymentMethod {
   id: number;
@@ -235,8 +236,8 @@ export default function DriverDashboard() {
           <p className="text-gray-600 mt-2">Manage your vehicles, earnings, and payments</p>
         </div>
 
-        {/* Quick Vehicle Switcher */}
-        <VehicleSwitcher showActiveOnly={true} />
+        {/* Active Vehicle Display */}
+        <ActiveVehicleDisplay />
 
         <Tabs defaultValue="earnings" className="w-full">
           <TabsList className="grid w-full grid-cols-4">

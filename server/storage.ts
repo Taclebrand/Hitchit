@@ -132,6 +132,14 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async setActiveVehicle(userId: number, vehicleId: number): Promise<User | undefined> {
+    const [user] = await db.update(users)
+      .set({ activeVehicleId: vehicleId })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
   // Authentication operations
   async createVerificationCode(code: InsertVerificationCode): Promise<VerificationCode> {
     const [verificationCode] = await db.insert(verificationCodes).values(code).returning();
