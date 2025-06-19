@@ -68,8 +68,18 @@ export const PaymentSetup: React.FC<PaymentSetupProps> = ({ userType, userId }) 
   const { data: paymentMethods = [], isLoading: loadingMethods } = useQuery({
     queryKey: ['/api/payment-methods'],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/payment-methods');
-      return response.json();
+      try {
+        const response = await apiRequest('GET', '/api/payment-methods');
+        if (!response.ok) {
+          console.warn('Payment methods API not available, using empty array');
+          return [];
+        }
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.warn('Failed to fetch payment methods:', error);
+        return [];
+      }
     }
   });
 
@@ -225,9 +235,9 @@ export const PaymentSetup: React.FC<PaymentSetupProps> = ({ userType, userId }) 
       return;
     }
 
-    const defaultBankAccount = paymentMethods.find((method: PaymentMethod) => 
+    const defaultBankAccount = Array.isArray(paymentMethods) ? paymentMethods.find((method: PaymentMethod) => 
       method.type === 'bank' && method.isDefault
-    );
+    ) : null;
 
     if (!defaultBankAccount) {
       toast({
@@ -356,7 +366,7 @@ export const PaymentSetup: React.FC<PaymentSetupProps> = ({ userType, userId }) 
             </div>
           ) : (
             <div className="space-y-3">
-              {paymentMethods.map((method: PaymentMethod) => (
+              {Array.isArray(paymentMethods) && paymentMethods.map((method: PaymentMethod) => (
                 <div
                   key={method.id}
                   className="flex items-center justify-between p-3 border rounded-lg"

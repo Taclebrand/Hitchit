@@ -68,6 +68,7 @@ class GoogleMapsService {
       console.log("Using Google Maps with API key present:", !!apiKey);
       
       if (!apiKey) {
+        console.warn('Google Maps API key not configured, using fallback location service');
         throw new Error('Google Maps API key not configured. Please add VITE_GOOGLE_MAPS_API_KEY to your environment.');
       }
       

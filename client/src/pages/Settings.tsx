@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Settings as SettingsIcon, Moon, Sun, Type, Eye, Volume2, CreditCard } from 'lucide-react';
+import { User, Settings as SettingsIcon, Moon, Sun, Type, Eye, Volume2, CreditCard, Home } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -114,9 +114,20 @@ const Settings: React.FC = () => {
         <div className="max-w-md mx-auto space-y-6">
           {/* Header */}
           <div className="text-center">
-            <div className="flex items-center justify-center mb-4">
-              <SettingsIcon className="w-8 h-8 text-blue-600 mr-3 gear-spin" />
-              <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+            <div className="flex items-center justify-between mb-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLocation('/')}
+                className="p-2"
+              >
+                <Home className="h-5 w-5" />
+              </Button>
+              <div className="flex items-center">
+                <SettingsIcon className="w-8 h-8 text-blue-600 mr-3 gear-spin" />
+                <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+              </div>
+              <div className="w-9"></div>
             </div>
             <p className="text-gray-600">Manage your account and preferences</p>
           </div>

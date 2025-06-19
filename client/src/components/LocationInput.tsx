@@ -114,7 +114,25 @@ export const LocationInput: React.FC<LocationInputProps> = ({
       const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN;
       
       if (!mapboxToken) {
-        throw new Error('Mapbox token not configured. Please add VITE_MAPBOX_TOKEN to your environment.');
+        // Use fallback coordinates if no API token
+        const detailedAddress = {
+          street: 'Demo Location',
+          city: 'Demo City',
+          state: 'CA',
+          zipCode: '90210'
+        };
+
+        onChange({
+          address: `${latitude.toFixed(4)}, ${longitude.toFixed(4)} (GPS Coordinates)`,
+          coordinates: { lat: latitude, lng: longitude },
+          detailedAddress
+        });
+
+        toast({
+          title: "GPS Location Set",
+          description: "Using GPS coordinates (Mapbox token needed for address lookup)",
+        });
+        return;
       }
       
       const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&types=address,poi`;
