@@ -49,6 +49,7 @@ export const vehicles = pgTable("vehicles", {
   make: text("make").notNull(),
   model: text("model").notNull(),
   year: integer("year").notNull(),
+  year: integer("year").notNull(),
   color: text("color").notNull(),
   licensePlate: text("license_plate").notNull(),
   seats: integer("seats").notNull().default(4),
