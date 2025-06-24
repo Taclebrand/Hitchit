@@ -18,7 +18,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarIcon, Car, MapPin, DollarSign, Users } from "lucide-react";
-import { fallbackLocationService } from "@/services/FallbackLocationService";
+import { GoogleMapsService } from "@/services/GoogleMapsService";
+import LocationInput from "@/components/LocationInput";
 
 const createTripSchema = z.object({
   vehicleId: z.coerce.number().positive("Vehicle ID is required"),
