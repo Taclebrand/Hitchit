@@ -47,10 +47,44 @@ export default function VehicleSwitcher({ compact = false, showActiveOnly = fals
     enabled: false // We'll mock this for now since auth endpoint needs work
   });
 
-  // For now, we'll track active vehicle in local state
-  const [activeVehicleId, setActiveVehicleId] = useState<number | null>(
-    vehicles.length > 0 ? vehicles[0]?.id : null
-  );
+  // Track active vehicle state
+  const [activeVehicleId, setActiveVehicleId] = useState<number | null>(null);
+
+  // Switch vehicle mutation
+  const switchVehicleMutation = useMutation({
+    mutationFn: async (vehicleId: number) => {
+      // In a real app, this would update the user's active vehicle
+      const response = await apiRequest('PUT', `/api/users/vehicle/${vehicleId}`);
+      if (!response.ok) throw new Error('Failed to switch vehicle');
+      return response.json();
+    },
+    onSuccess: (data, vehicleId) => {
+      setActiveVehicleId(vehicleId);
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      toast({
+        title: "Vehicle Switched",
+        description: "Your active vehicle has been updated",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Switch Failed",
+        description: error.message || "Failed to switch vehicle",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleVehicleSwitch = (vehicleId: number) => {
+    switchVehicleMutation.mutate(vehicleId);
+  };
+
+  // Initialize active vehicle from first available vehicle
+  React.useEffect(() => {
+    if (vehicles.length > 0 && activeVehicleId === null) {
+      setActiveVehicleId(vehicles[0].id);
+    }
+  }, [vehicles, activeVehicleId]);
 
   // Set active vehicle mutation
   const setActiveVehicleMutation = useMutation({

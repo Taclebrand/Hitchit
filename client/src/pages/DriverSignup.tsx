@@ -438,15 +438,12 @@ const DriverSignup = () => {
   
   const onVerificationComplete = () => {
     if (!selfieImage) {
-      // For testing purposes, we'll provide a temporary selfie
-      // In production, this should be removed and require an actual selfie
-      const tempSelfie = "data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3e%3ccircle cx='100' cy='80' r='50' fill='%23e2e8f0'/%3e%3ccircle cx='100' cy='230' r='100' fill='%23e2e8f0'/%3e%3c/svg%3e";
-      setSelfieImage(tempSelfie);
-      
       toast({
-        title: "Test Mode Activated",
-        description: "Using a placeholder selfie for testing purposes.",
+        title: "Selfie Required",
+        description: "Please capture a selfie to complete verification.",
+        variant: "destructive"
       });
+      return;
     }
     
     // Move to background check step

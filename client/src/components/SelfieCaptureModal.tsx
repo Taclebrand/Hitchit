@@ -16,8 +16,18 @@ const SelfieCaptureModal: React.FC<SelfieCaptureModalProps> = ({ onCapture, onCl
 
   const startCamera = async () => {
     try {
+      // Check if getUserMedia is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera access not supported in this browser');
+      }
+
+      // Request camera permission with proper constraints
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: "user" }, 
+        video: { 
+          facingMode: "user",
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        }, 
         audio: false 
       });
       
@@ -26,10 +36,28 @@ const SelfieCaptureModal: React.FC<SelfieCaptureModalProps> = ({ onCapture, onCl
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        // Ensure video plays after setting source
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play();
+        };
       }
     } catch (error) {
-      console.error("Error accessing camera:", error);
-      alert("Unable to access camera. Please make sure you've granted camera permissions.");
+      console.error("Camera access error:", error);
+      let errorMessage = "Unable to access camera. ";
+      
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          errorMessage += "Please allow camera access in your browser settings and try again.";
+        } else if (error.name === 'NotFoundError') {
+          errorMessage += "No camera found. Please connect a camera and try again.";
+        } else if (error.name === 'NotReadableError') {
+          errorMessage += "Camera is being used by another application.";
+        } else {
+          errorMessage += error.message;
+        }
+      }
+      
+      alert(errorMessage);
     }
   };
 
