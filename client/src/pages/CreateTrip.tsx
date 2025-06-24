@@ -85,7 +85,7 @@ const CreateTrip = () => {
     },
   });
 
-  // Fetch vehicles from API
+  // Fetch vehicles and active vehicle from API
   const fetchVehicles = async () => {
     try {
       const response = await fetch("/api/vehicles/user/1");
@@ -93,8 +93,21 @@ const CreateTrip = () => {
         const data = await response.json();
         if (Array.isArray(data)) {
           setVehicles(data);
-          // Auto-select first vehicle if available
-          if (data.length > 0) {
+          
+          // Try to get the active vehicle
+          const activeResponse = await fetch("/api/vehicles/active");
+          if (activeResponse.ok) {
+            const activeVehicle = await activeResponse.json();
+            if (activeVehicle) {
+              setSelectedVehicleId(activeVehicle.id);
+              form.setValue('vehicleId', activeVehicle.id);
+            } else if (data.length > 0) {
+              // Auto-select first vehicle if no active vehicle set
+              setSelectedVehicleId(data[0].id);
+              form.setValue('vehicleId', data[0].id);
+            }
+          } else if (data.length > 0) {
+            // Fallback to first vehicle
             setSelectedVehicleId(data[0].id);
             form.setValue('vehicleId', data[0].id);
           }
