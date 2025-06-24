@@ -63,10 +63,8 @@ const CreateTrip = () => {
     minimumFare: 7.00,
     useCustomPrice: false
   });
-  const [vehicles, setVehicles] = useState<{ id: number, make: string, model: string }[]>([
-    { id: 1, make: "Toyota", model: "Camry" },
-    { id: 2, make: "Honda", model: "Accord" },
-  ]);
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
 
   const form = useForm<TripFormValues>({
     resolver: zodResolver(createTripSchema),
@@ -86,35 +84,26 @@ const CreateTrip = () => {
     },
   });
 
-  // This would fetch the user's vehicles from the API in a real implementation
+  // Fetch vehicles from API
   const fetchVehicles = async () => {
     try {
-      // Try fetching from API
-      try {
-        const response = await fetch("/api/vehicles/user/1"); // Replace 1 with actual user ID
-        if (response.ok) {
-          const data = await response.json();
-          if (Array.isArray(data)) {
-            setVehicles(data);
-            return;
+      const response = await fetch("/api/vehicles/user/1");
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setVehicles(data);
+          // Auto-select first vehicle if available
+          if (data.length > 0) {
+            setSelectedVehicleId(data[0].id);
+            form.setValue('vehicleId', data[0].id);
           }
         }
-      } catch (apiError) {
-        console.warn("Failed to fetch vehicles from API:", apiError);
       }
-      
-      // If API fails, use demo vehicles
-      setVehicles([
-        { id: 1, make: "Toyota", model: "Camry" },
-        { id: 2, make: "Honda", model: "Accord" },
-        { id: 3, make: "Tesla", model: "Model 3" },
-        { id: 4, make: "Ford", model: "Mustang" }
-      ]);
     } catch (error) {
       console.error("Failed to fetch vehicles:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch your vehicles. Using demo vehicles instead.",
+        description: "Failed to fetch your vehicles.",
         variant: "destructive",
       });
     }
@@ -311,11 +300,16 @@ const CreateTrip = () => {
                           <select
                             className="w-full rounded-md border border-input px-3 py-2 bg-background"
                             {...field}
+                            onChange={(e) => {
+                              const vehicleId = parseInt(e.target.value);
+                              field.onChange(vehicleId);
+                              setSelectedVehicleId(vehicleId);
+                            }}
                           >
                             <option value="0" disabled>Select a vehicle</option>
                             {vehicles.map(vehicle => (
                               <option key={vehicle.id} value={vehicle.id}>
-                                {vehicle.make} {vehicle.model}
+                                {vehicle.year} {vehicle.make} {vehicle.model} ({vehicle.color}, {vehicle.seats} seats)
                               </option>
                             ))}
                           </select>

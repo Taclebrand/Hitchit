@@ -75,10 +75,6 @@ export default function VehicleSwitcher({ compact = false, showActiveOnly = fals
     }
   });
 
-  const handleVehicleSwitch = (vehicleId: number) => {
-    switchVehicleMutation.mutate(vehicleId);
-  };
-
   // Initialize active vehicle from first available vehicle
   React.useEffect(() => {
     if (vehicles.length > 0 && activeVehicleId === null) {
