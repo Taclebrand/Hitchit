@@ -50,10 +50,16 @@ export default function VehicleSwitcher({ compact = false, showActiveOnly = fals
   // Track active vehicle state
   const [activeVehicleId, setActiveVehicleId] = useState<number | null>(null);
 
+  // Initialize active vehicle from first available vehicle
+  React.useEffect(() => {
+    if (vehicles.length > 0 && activeVehicleId === null) {
+      setActiveVehicleId(vehicles[0].id);
+    }
+  }, [vehicles, activeVehicleId]);
+
   // Switch vehicle mutation
   const switchVehicleMutation = useMutation({
     mutationFn: async (vehicleId: number) => {
-      // In a real app, this would update the user's active vehicle
       const response = await apiRequest('PUT', `/api/users/vehicle/${vehicleId}`);
       if (!response.ok) throw new Error('Failed to switch vehicle');
       return response.json();
@@ -75,39 +81,11 @@ export default function VehicleSwitcher({ compact = false, showActiveOnly = fals
     }
   });
 
-  // Initialize active vehicle from first available vehicle
-  React.useEffect(() => {
-    if (vehicles.length > 0 && activeVehicleId === null) {
-      setActiveVehicleId(vehicles[0].id);
-    }
-  }, [vehicles, activeVehicleId]);
-
-  // Set active vehicle mutation
-  const setActiveVehicleMutation = useMutation({
-    mutationFn: (vehicleId: number) => 
-      apiRequest('PUT', `/api/users/active-vehicle/${vehicleId}`).then(res => res.json()),
-    onSuccess: (data) => {
-      setActiveVehicleId(data.activeVehicleId);
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
-      toast({
-        title: "Vehicle Switched",
-        description: "Active vehicle updated successfully"
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to switch vehicle",
-        variant: "destructive"
-      });
-    }
-  });
-
   const activeVehicle = vehicles.find((v: Vehicle) => v.id === activeVehicleId);
   const inactiveVehicles = vehicles.filter((v: Vehicle) => v.id !== activeVehicleId);
 
   const handleVehicleSwitch = (vehicleId: number) => {
-    setActiveVehicleMutation.mutate(vehicleId);
+    switchVehicleMutation.mutate(vehicleId);
   };
 
   const getVehicleDisplayName = (vehicle: Vehicle) => {
