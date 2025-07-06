@@ -28,6 +28,8 @@ class GoogleMapsService {
   private apiKey: string = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   private geocoder: google.maps.Geocoder | null = null;
   private directionsService: google.maps.DirectionsService | null = null;
+  private autocompleteService: google.maps.places.AutocompleteService | null = null;
+  private placesService: google.maps.places.PlacesService | null = null;
 
   // Initialize Google Maps services when needed
   private initServices() {
@@ -36,6 +38,15 @@ class GoogleMapsService {
     }
     if (!this.directionsService) {
       this.directionsService = new google.maps.DirectionsService();
+    }
+    if (!this.autocompleteService && google.maps.places) {
+      this.autocompleteService = new google.maps.places.AutocompleteService();
+    }
+    if (!this.placesService && google.maps.places) {
+      // Create a dummy div for PlacesService
+      const dummyDiv = document.createElement('div');
+      const map = new google.maps.Map(dummyDiv);
+      this.placesService = new google.maps.places.PlacesService(map);
     }
   }
 
@@ -199,6 +210,86 @@ class GoogleMapsService {
       return routeInfo.duration.text;
     } catch (error) {
       console.error('Error calculating ETA:', error);
+      throw error;
+    }
+  }
+
+  // Get place predictions for autocomplete
+  public async getPlacePredictions(input: string, options?: any): Promise<any[]> {
+    try {
+      await this.loadGoogleMapsApi();
+      this.initServices();
+
+      if (!this.autocompleteService) {
+        throw new Error('AutocompleteService not initialized');
+      }
+
+      if (!input || input.length < 2) {
+        return [];
+      }
+
+      return new Promise((resolve, reject) => {
+        const request = {
+          input: input,
+          types: ['geocode'],
+          componentRestrictions: { country: 'US' },
+          ...options
+        };
+
+        this.autocompleteService!.getPlacePredictions(request, (predictions, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+            resolve(predictions);
+          } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+            resolve([]);
+          } else {
+            reject(new Error(`Places service failed: ${status}`));
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Error getting place predictions:', error);
+      throw error;
+    }
+  }
+
+  // Get place details by place ID
+  public async getPlaceDetails(placeId: string): Promise<LocationResult> {
+    try {
+      await this.loadGoogleMapsApi();
+      this.initServices();
+
+      if (!this.placesService) {
+        throw new Error('PlacesService not initialized');
+      }
+
+      return new Promise((resolve, reject) => {
+        const request = {
+          placeId: placeId,
+          fields: ['place_id', 'formatted_address', 'geometry', 'name']
+        };
+
+        this.placesService!.getDetails(request, (place, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+            const location = place.geometry?.location;
+            if (location) {
+              resolve({
+                coordinates: {
+                  lat: location.lat(),
+                  lng: location.lng()
+                },
+                formattedAddress: place.formatted_address || '',
+                placeId: place.place_id
+              });
+            } else {
+              reject(new Error('No geometry found for place'));
+            }
+          } else {
+            reject(new Error(`Place details failed: ${status}`));
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Error getting place details:', error);
       throw error;
     }
   }

@@ -14,6 +14,7 @@ import {
 import DeliveryOption from "@/components/DeliveryOption";
 import LocationInput from "@/components/LocationInput";
 import PricingControl from "@/components/PricingControl";
+import GoogleAutocomplete from "@/components/GoogleAutocomplete";
 import { useToast } from "@/hooks/use-toast";
 import { fallbackLocationService } from "@/services/FallbackLocationService";
 import { mapboxService } from "@/services/MapboxService";
@@ -267,12 +268,16 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
           <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mr-3">
             <div className="w-3 h-3 bg-primary rounded-full"></div>
           </div>
-          <Input
-            type="text"
+          <GoogleAutocomplete
             placeholder="Pickup address"
-            className="flex-1 py-2 px-3 bg-neutral-50 rounded-lg border border-neutral-200"
-            value={pickupAddress}
-            onChange={(e) => setPickupAddress(e.target.value)}
+            onLocationSelect={(location) => {
+              setPickupLocation({
+                address: location.address,
+                coordinates: location.coordinates
+              });
+            }}
+            initialValue={pickupLocation.address}
+            className="flex-1"
           />
         </div>
         
@@ -282,12 +287,16 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
           <div className="w-8 h-8 bg-secondary/20 rounded-full flex items-center justify-center mr-3">
             <div className="w-3 h-3 bg-secondary rounded-full"></div>
           </div>
-          <Input
-            type="text"
+          <GoogleAutocomplete
             placeholder="Delivery address"
-            className="flex-1 py-2 px-3 bg-neutral-50 rounded-lg border border-neutral-200"
-            value={deliveryAddress}
-            onChange={(e) => setDeliveryAddress(e.target.value)}
+            onLocationSelect={(location) => {
+              setDeliveryLocation({
+                address: location.address,
+                coordinates: location.coordinates
+              });
+            }}
+            initialValue={deliveryLocation.address}
+            className="flex-1"
           />
         </div>
         

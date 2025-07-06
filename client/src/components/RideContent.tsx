@@ -6,6 +6,7 @@ import RideOption from "@/components/RideOption";
 import { LocationPicker } from "@/components/LocationPicker";
 import { GoogleLocationPicker } from "@/components/GoogleLocationPicker";
 import { GoogleMapDisplay } from "@/components/GoogleMapDisplay";
+import GoogleAutocomplete from "@/components/GoogleAutocomplete";
 import { googleMapsService } from "@/services/GoogleMapsService";
 import { fallbackLocationService } from "@/services/FallbackLocationService";
 import { useToast } from "@/hooks/use-toast";
@@ -310,69 +311,41 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
             </Button>
             
             <div className="flex items-center mt-1">
-              <Input
-                type="text"
+              <GoogleAutocomplete
                 placeholder="Enter pickup address"
-                className="flex-1 py-2 px-3 bg-neutral-50 rounded-lg border border-neutral-200"
-                value={currentLocation.address}
-                onChange={(e) => setCurrentLocation({...currentLocation, address: e.target.value})}
-                onFocus={() => setShowPickupLocationPicker(true)}
+                onLocationSelect={(location) => {
+                  setCurrentLocation({
+                    address: location.address,
+                    lat: location.coordinates.lat,
+                    lng: location.coordinates.lng
+                  });
+                }}
+                initialValue={currentLocation.address}
+                className="w-full"
               />
             </div>
-            
-            {showPickupLocationPicker && (
-              <div className="mt-2">
-                <GoogleLocationPicker 
-                  onLocationSelect={handleLocationSelect}
-                  label="Search for location"
-                  buttonText="Use Selected Location"
-                />
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="mt-2"
-                  onClick={() => setShowPickupLocationPicker(false)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            )}
           </div>
         </div>
         
-        {!showDestinationPicker ? (
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-secondary/20 rounded-full flex items-center justify-center mr-3">
-              <div className="w-3 h-3 bg-secondary rounded-full"></div>
-            </div>
-            <div 
-              className="flex-1 py-2 px-3 bg-neutral-50 rounded-lg border border-neutral-200 flex justify-between items-center cursor-pointer"
-              onClick={() => setShowDestinationPicker(true)}
-            >
-              <span className={`${!destination.address ? 'text-gray-400' : ''}`}>
-                {destination.address || "Where to?"}
-              </span>
-              <MapPinIcon className="h-4 w-4 text-secondary" />
-            </div>
+        <div className="flex items-center">
+          <div className="w-8 h-8 bg-secondary/20 rounded-full flex items-center justify-center mr-3">
+            <div className="w-3 h-3 bg-secondary rounded-full"></div>
           </div>
-        ) : (
-          <div>
-            {/* Use the Google Location Picker for destination as well */}
-            <GoogleLocationPicker 
-              onLocationSelect={handleDestinationSelect}
-              label="Destination"
-              buttonText="Set As Destination"
+          <div className="flex-1">
+            <GoogleAutocomplete
+              placeholder="Where to?"
+              onLocationSelect={(location) => {
+                setDestination({
+                  address: location.address,
+                  lat: location.coordinates.lat,
+                  lng: location.coordinates.lng
+                });
+              }}
+              initialValue={destination.address}
+              className="w-full"
             />
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="mt-2"
-              onClick={() => setShowDestinationPicker(false)}
-            >
-              Cancel
-            </Button>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Suggested Locations */}
