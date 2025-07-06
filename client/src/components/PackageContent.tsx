@@ -104,6 +104,18 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
   const handleSelectDeliveryOption = (id: string) => {
     setSelectedDeliveryOption(id);
   };
+
+  const handleSearchDrivers = () => {
+    if (!pickupLocation.address || !deliveryLocation.address) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter both pickup and delivery locations",
+        variant: "destructive"
+      });
+      return;
+    }
+    setShowDriverSearch(true);
+  };
   
   // Handle address verification confirmation
   const handleVerificationConfirm = () => {
