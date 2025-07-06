@@ -425,24 +425,7 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
         </div>
       )}
 
-      {/* Ride Types */}
-      <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
-        <h3 className="font-semibold mb-3">Select Ride Type</h3>
-        <div className="space-y-3">
-          {rideTypes.map((type) => (
-            <RideOption
-              key={type.id}
-              id={type.id}
-              name={type.name}
-              price={routeInfo ? routeInfo.fare : type.price}
-              time={type.time}
-              icon={type.icon}
-              selected={selectedRideType === type.id}
-              onClick={() => handleSelectRideType(type.id)}
-            />
-          ))}
-        </div>
-      </div>
+      {/* Available Rides will be shown after entering destination */}
 
       {/* Call to Action */}
       <div className="p-4 sticky bottom-0">
@@ -453,7 +436,7 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
         >
           {!currentLocation.lat || !destination.lat 
             ? "Enter Pickup & Destination" 
-            : `Book ${selectedRideType.charAt(0).toUpperCase() + selectedRideType.slice(1)} Ride${routeInfo ? ` • $${routeInfo.fare.toFixed(2)}` : ""}`
+            : "Search Available Rides"
           }
         </Button>
       </div>

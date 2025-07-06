@@ -82,22 +82,22 @@ export const LocationInput: React.FC<LocationInputProps> = ({
           },
           (error) => {
             console.error('Geolocation error:', error);
-            let message = 'Unable to get location: ';
-            switch(error.code) {
+            let errorMessage = 'Location access failed. ';
+            switch (error.code) {
               case error.PERMISSION_DENIED:
-                message += 'Location access denied by user';
+                errorMessage += 'Please enable location permissions in your browser settings.';
                 break;
               case error.POSITION_UNAVAILABLE:
-                message += 'Location information unavailable';
+                errorMessage += 'Location information is unavailable.';
                 break;
               case error.TIMEOUT:
-                message += 'Location request timed out';
+                errorMessage += 'Location request timed out. Please try again.';
                 break;
               default:
-                message += 'Unknown error occurred';
+                errorMessage += 'An unknown error occurred.';
                 break;
             }
-            reject(new Error(message));
+            reject(new Error(errorMessage));
           },
           {
             enableHighAccuracy: true,
@@ -108,7 +108,71 @@ export const LocationInput: React.FC<LocationInputProps> = ({
       });
 
       const { latitude, longitude } = position.coords;
-      console.log('Getting address for coordinates:', latitude, longitude);
+      console.log('GPS coordinates obtained:', latitude, longitude);
+      
+      // Try Google Maps reverse geocoding first
+      const googleApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+      if (googleApiKey) {
+        try {
+          console.log('Attempting Google Maps reverse geocoding...');
+          const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${googleApiKey}`;
+          const response = await fetch(geocodeUrl);
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.results && data.results.length > 0) {
+              const result = data.results[0];
+              const addressComponents = result.address_components;
+              
+              let streetNumber = '';
+              let route = '';
+              let city = '';
+              let state = '';
+              let zipCode = '';
+
+              addressComponents.forEach((component: any) => {
+                const types = component.types;
+                if (types.includes('street_number')) {
+                  streetNumber = component.long_name;
+                } else if (types.includes('route')) {
+                  route = component.long_name;
+                } else if (types.includes('locality')) {
+                  city = component.long_name;
+                } else if (types.includes('administrative_area_level_1')) {
+                  state = component.short_name;
+                } else if (types.includes('postal_code')) {
+                  zipCode = component.long_name;
+                }
+              });
+
+              const streetAddress = `${streetNumber} ${route}`.trim();
+
+              onChange({
+                address: result.formatted_address,
+                coordinates: { lat: latitude, lng: longitude },
+                detailedAddress: {
+                  street: streetAddress,
+                  city,
+                  state,
+                  zipCode
+                }
+              });
+
+              toast({
+                title: "Real Location Found",
+                description: `Successfully detected: ${city}, ${state}`,
+              });
+              return;
+            }
+          } else {
+            console.error('Google geocoding API error:', response.status);
+          }
+        } catch (googleError) {
+          console.error('Google geocoding failed:', googleError);
+        }
+      } else {
+        console.warn('Google Maps API key not found');
+      }
 
       // Use Mapbox Geocoding API for reverse geocoding
       const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN;
