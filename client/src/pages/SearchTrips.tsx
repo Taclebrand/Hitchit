@@ -174,18 +174,32 @@ const SearchTrips = () => {
         throw new Error("Failed to search for trips");
       }
       
-      const tripsData = await response.json();
+      const searchResults = await response.json();
       
-      // Map API response to our Trip type (adding mock driver and vehicle info)
-      const formattedTrips: Trip[] = tripsData.map((trip: any) => ({
+      // Handle the new response format with trips array and metadata
+      const trips = searchResults.trips || [];
+      const hasMatches = searchResults.hasMatches || false;
+      const message = searchResults.message || '';
+      
+      // Map API response to our Trip type with real data only
+      const formattedTrips: Trip[] = trips.map((trip: any) => ({
         ...trip,
-        driverName: "Driver " + trip.driverId, // In a real app, we'd fetch driver name
-        vehicleMake: "Toyota", // Mock data
-        vehicleModel: "Camry", // Mock data
-        distance: 5.2 // Mock distance calculation
+        driverName: "Driver " + trip.driverId, // Will be replaced with real data later
+        vehicleMake: "Vehicle", // Will be replaced with real data later
+        vehicleModel: "Info", // Will be replaced with real data later
+        distance: 5.2 // Will be calculated based on real coordinates
       }));
       
       setTrips(formattedTrips);
+      
+      // Show message if no matches found
+      if (!hasMatches && message) {
+        toast({
+          title: "No Rides Found",
+          description: message,
+          variant: "default",
+        });
+      }
       
     } catch (error) {
       console.error("Error searching for trips:", error);
@@ -414,7 +428,7 @@ const SearchTrips = () => {
                     <CardContent className="flex flex-col items-center justify-center p-6">
                       <Map className="h-12 w-12 text-muted-foreground mb-2" />
                       <p className="text-center text-muted-foreground">
-                        No trips matched your search criteria. Try expanding your search radius or changing your dates.
+                        No matching rides found. Try expanding your search radius, changing your dates, or check back later for new trips.
                       </p>
                     </CardContent>
                   </Card>

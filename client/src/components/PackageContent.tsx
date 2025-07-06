@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { 
   Select,
   SelectContent,
@@ -16,20 +18,23 @@ import { useToast } from "@/hooks/use-toast";
 import { fallbackLocationService } from "@/services/FallbackLocationService";
 import { mapboxService } from "@/services/MapboxService";
 import { googleMapsService } from "@/services/GoogleMapsService";
-import { MapPinIcon, CheckCircle } from "lucide-react";
+import { MapPinIcon, CheckCircle, Truck, Clock, Users } from "lucide-react";
 import { AddressVerificationModal } from "@/components/AddressVerificationModal";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface PackageContentProps {
   onSendPackage: () => void;
 }
 
 const PackageContent = ({ onSendPackage }: PackageContentProps) => {
-  const [pickupAddress, setPickupAddress] = useState("123 Main St");
-  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [pickupLocation, setPickupLocation] = useState({ address: "", coordinates: { lat: 0, lng: 0 } });
+  const [deliveryLocation, setDeliveryLocation] = useState({ address: "", coordinates: { lat: 0, lng: 0 } });
   const [packageSize, setPackageSize] = useState<"small" | "medium" | "large">("small");
   const [packageWeight, setPackageWeight] = useState("up-to-5-lbs");
   const [contentsDescription, setContentsDescription] = useState("");
   const [selectedDeliveryOption, setSelectedDeliveryOption] = useState("standard");
+  const [showDriverSearch, setShowDriverSearch] = useState(false);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [addressToVerify, setAddressToVerify] = useState<{
@@ -38,6 +43,38 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
     coordinates: {lat: number, lng: number}
   } | null>(null);
   const { toast } = useToast();
+
+  // Search for available drivers based on package delivery route
+  const { data: driverSearchResults, isLoading: searchingDrivers } = useQuery({
+    queryKey: ['/api/trips/search/bookings', pickupLocation, deliveryLocation],
+    queryFn: async () => {
+      if (!pickupLocation.coordinates.lat || !deliveryLocation.coordinates.lat) {
+        return { trips: [], hasMatches: false, message: '' };
+      }
+      
+      const response = await apiRequest('POST', '/api/trips/search/bookings', {
+        origin: {
+          address: pickupLocation.address,
+          lat: pickupLocation.coordinates.lat,
+          lng: pickupLocation.coordinates.lng
+        },
+        destination: {
+          address: deliveryLocation.address,
+          lat: deliveryLocation.coordinates.lat,
+          lng: deliveryLocation.coordinates.lng
+        },
+        radiusMiles: 15, // Larger radius for package delivery
+        type: 'package'
+      });
+      return response.json();
+    },
+    enabled: showDriverSearch && !!pickupLocation.coordinates.lat && !!deliveryLocation.coordinates.lat,
+    staleTime: 30000
+  });
+
+  const availableDrivers = driverSearchResults?.trips || [];
+  const hasDriverMatches = driverSearchResults?.hasMatches || false;
+  const driverSearchMessage = driverSearchResults?.message;
 
   const deliveryOptions = [
     { 
@@ -334,12 +371,77 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
       
       {/* Call to Action */}
       <div className="p-4 sticky bottom-0">
-        <Button 
-          className="w-full py-4 bg-primary rounded-full text-white font-medium shadow-lg"
-          onClick={onSendPackage}
-        >
-          Send Package
-        </Button>
+        <div className="space-y-3">
+          <Button
+            className="w-full py-4 bg-blue-500 text-white rounded-full font-medium shadow-lg"
+            onClick={handleSearchDrivers}
+            disabled={!pickupLocation.address || !deliveryLocation.address}
+          >
+            {!pickupLocation.address || !deliveryLocation.address 
+              ? "Enter Pickup & Delivery Locations" 
+              : "Search Available Drivers"
+            }
+          </Button>
+
+          {/* Driver Search Results */}
+          {showDriverSearch && (
+            <div className="mt-4">
+              {searchingDrivers ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                  <p className="text-sm text-gray-600">Searching for available drivers...</p>
+                </div>
+              ) : hasDriverMatches ? (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-green-600">Found {availableDrivers.length} Available Drivers</h4>
+                  {availableDrivers.slice(0, 3).map((driver: any) => (
+                    <Card key={driver.id} className="border-green-200">
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Truck className="h-5 w-5 text-blue-500" />
+                            <div>
+                              <p className="font-medium">Driver {driver.driverId}</p>
+                              <p className="text-xs text-gray-500">
+                                {driver.originCity} → {driver.destinationCity}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant="outline" className="text-green-600">
+                              ${driver.price}
+                            </Badge>
+                            <p className="text-xs text-gray-500 mt-1">
+                              <Clock className="h-3 w-3 inline mr-1" />
+                              {new Date(driver.departureDate).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  <Button
+                    className="w-full py-3 bg-emerald-500 text-white rounded-full font-medium"
+                    onClick={onSendPackage}
+                  >
+                    Send Package with Selected Driver
+                  </Button>
+                </div>
+              ) : (
+                <Card className="border-red-200">
+                  <CardContent className="p-4 text-center">
+                    <Truck className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                    <h4 className="font-medium text-red-600 mb-1">No Drivers Available</h4>
+                    <p className="text-sm text-gray-600">{driverSearchMessage}</p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Try expanding your search radius or check back later for new trips.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

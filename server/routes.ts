@@ -685,13 +685,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all active trips
+  // Get all active trips with advanced filtering and matching
   apiRouter.get("/trips", async (req: Request, res: Response) => {
     try {
-      const trips = await storage.getActiveTrips();
+      const { 
+        origin, 
+        destination, 
+        origin_lat, 
+        origin_lng, 
+        destination_lat, 
+        destination_lng, 
+        date,
+        seats,
+        maxDistance = 25, // Default 25 miles radius
+        type = 'ride' // ride or package
+      } = req.query;
+
+      let trips = await storage.getActiveTrips();
       
-      return res.status(200).json(trips);
+      // If no filters provided, return all active trips
+      if (!origin && !destination && !origin_lat && !origin_lng && !date && !seats) {
+        return res.status(200).json(trips);
+      }
+
+      // Filter by origin location proximity if coordinates provided
+      if (origin_lat && origin_lng) {
+        const originLat = parseFloat(origin_lat as string);
+        const originLng = parseFloat(origin_lng as string);
+        const maxDist = parseFloat(maxDistance as string);
+        
+        trips = trips.filter(trip => {
+          const distance = calculateDistance(
+            originLat, 
+            originLng, 
+            trip.originLat, 
+            trip.originLng
+          );
+          return distance <= maxDist;
+        });
+      }
+
+      // Filter by destination location proximity if coordinates provided
+      if (destination_lat && destination_lng) {
+        const destLat = parseFloat(destination_lat as string);
+        const destLng = parseFloat(destination_lng as string);
+        const maxDist = parseFloat(maxDistance as string);
+        
+        trips = trips.filter(trip => {
+          const distance = calculateDistance(
+            destLat, 
+            destLng, 
+            trip.destinationLat, 
+            trip.destinationLng
+          );
+          return distance <= maxDist;
+        });
+      }
+
+      // Filter by date if provided
+      if (date) {
+        const searchDate = new Date(date as string);
+        trips = trips.filter(trip => {
+          const tripDate = new Date(trip.departureDate);
+          return tripDate.toDateString() === searchDate.toDateString();
+        });
+      }
+
+      // Filter by available seats if provided
+      if (seats) {
+        const requiredSeats = parseInt(seats as string);
+        trips = trips.filter(trip => trip.availableSeats >= requiredSeats);
+      }
+
+      // Return results with proper no-match handling
+      return res.status(200).json({
+        trips,
+        total: trips.length,
+        hasMatches: trips.length > 0,
+        message: trips.length === 0 ? (type === 'package' ? 'No drivers available for package delivery' : 'No matching rides found') : undefined
+      });
     } catch (error) {
+      console.error("Error fetching trips:", error);
       return res.status(500).json({ message: "Failed to get trips" });
     }
   });
@@ -750,19 +824,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Search for trips by cities
+  // Search for trips by cities with real matching logic
   apiRouter.post("/trips/search/bookings", async (req: Request, res: Response) => {
     try {
       const { 
         origin, 
         destination, 
         departureDate,
-        radiusMiles = 5 // Default to 5 miles radius
+        radiusMiles = 10, // Increased default radius for better matching
+        seats = 1,
+        type = 'ride' // ride or package
       } = req.body;
       
-      if (!origin || !destination || !departureDate) {
+      if (!origin || !destination) {
         return res.status(400).json({ 
-          message: "Origin, destination and departureDate are required" 
+          message: "Origin and destination are required" 
         });
       }
       
@@ -772,20 +848,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const parsedDate = new Date(departureDate);
-      if (isNaN(parsedDate.getTime())) {
+      const parsedDate = departureDate ? new Date(departureDate) : null;
+      if (departureDate && isNaN(parsedDate!.getTime())) {
         return res.status(400).json({ message: "Invalid departure date" });
       }
       
-      const trips = await storage.findMatchingTripsForBooking(
-        origin,
-        destination,
-        parsedDate,
-        radiusMiles
-      );
+      let trips = await storage.getActiveTrips();
       
-      return res.status(200).json(trips);
+      // Filter by origin proximity
+      trips = trips.filter(trip => {
+        const distance = calculateDistance(
+          origin.lat, 
+          origin.lng, 
+          trip.originLat, 
+          trip.originLng
+        );
+        return distance <= radiusMiles;
+      });
+      
+      // Filter by destination proximity  
+      trips = trips.filter(trip => {
+        const distance = calculateDistance(
+          destination.lat, 
+          destination.lng, 
+          trip.destinationLat, 
+          trip.destinationLng
+        );
+        return distance <= radiusMiles;
+      });
+      
+      // Filter by date if provided
+      if (parsedDate) {
+        trips = trips.filter(trip => {
+          const tripDate = new Date(trip.departureDate);
+          return tripDate.toDateString() === parsedDate.toDateString();
+        });
+      }
+      
+      // Filter by available seats for rides
+      if (type === 'ride') {
+        trips = trips.filter(trip => trip.availableSeats >= parseInt(seats.toString()));
+      }
+      
+      // Return results with proper messaging
+      const hasMatches = trips.length > 0;
+      const message = hasMatches 
+        ? `Found ${trips.length} matching ${type === 'package' ? 'drivers' : 'rides'}`
+        : type === 'package' 
+          ? 'No drivers available for package delivery' 
+          : 'No matching rides found';
+      
+      return res.status(200).json({
+        trips,
+        total: trips.length,
+        hasMatches,
+        message,
+        searchCriteria: {
+          origin: origin.address || `${origin.lat}, ${origin.lng}`,
+          destination: destination.address || `${destination.lat}, ${destination.lng}`,
+          date: departureDate,
+          radiusMiles,
+          seats: type === 'ride' ? seats : undefined,
+          type
+        }
+      });
     } catch (error) {
+      console.error("Trip search error:", error);
       return res.status(500).json({ message: "Failed to search for trips" });
     }
   });
