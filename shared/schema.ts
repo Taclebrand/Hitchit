@@ -265,6 +265,71 @@ export const insertPricingSuggestionSchema = createInsertSchema(pricingSuggestio
   demandMultiplier: true,
 });
 
+// Recent Locations Table
+export const recentLocations = pgTable("recent_locations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  address: text("address").notNull(),
+  streetAddress: text("street_address"),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  zipCode: text("zip_code"),
+  lat: decimal("lat", { precision: 10, scale: 8 }).notNull(),
+  lng: decimal("lng", { precision: 11, scale: 8 }).notNull(),
+  usageCount: integer("usage_count").default(1).notNull(),
+  lastUsed: timestamp("last_used").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Favorite Locations Table
+export const favoriteLocations = pgTable("favorite_locations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  name: text("name").notNull(), // "Home", "Work", "Gym", etc.
+  address: text("address").notNull(),
+  streetAddress: text("street_address"),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  zipCode: text("zip_code"),
+  lat: decimal("lat", { precision: 10, scale: 8 }).notNull(),
+  lng: decimal("lng", { precision: 11, scale: 8 }).notNull(),
+  icon: text("icon").default("pin").notNull(), // "home", "office", "store", "pin", etc.
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertRecentLocationSchema = createInsertSchema(recentLocations).pick({
+  userId: true,
+  address: true,
+  streetAddress: true,
+  city: true,
+  state: true,
+  zipCode: true,
+  lat: true,
+  lng: true,
+}).extend({
+  userId: z.number().optional(), // Will be set server-side from auth
+  lat: z.coerce.number(),
+  lng: z.coerce.number(),
+});
+
+export const insertFavoriteLocationSchema = createInsertSchema(favoriteLocations).pick({
+  userId: true,
+  name: true,
+  address: true,
+  streetAddress: true,
+  city: true,
+  state: true,
+  zipCode: true,
+  lat: true,
+  lng: true,
+  icon: true,
+}).extend({
+  userId: z.number().optional(), // Will be set server-side from auth
+  lat: z.coerce.number(),
+  lng: z.coerce.number(),
+});
+
 // Export types for use in the application
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -292,6 +357,12 @@ export type InsertDriverWithdrawal = z.infer<typeof insertDriverWithdrawalSchema
 
 export type PricingSuggestion = typeof pricingSuggestions.$inferSelect;
 export type InsertPricingSuggestion = z.infer<typeof insertPricingSuggestionSchema>;
+
+export type RecentLocation = typeof recentLocations.$inferSelect;
+export type InsertRecentLocation = z.infer<typeof insertRecentLocationSchema>;
+
+export type FavoriteLocation = typeof favoriteLocations.$inferSelect;
+export type InsertFavoriteLocation = z.infer<typeof insertFavoriteLocationSchema>;
 
 // Trip Shares Table - for QR code sharing functionality
 export const tripShares = pgTable("trip_shares", {

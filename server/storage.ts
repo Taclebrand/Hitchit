@@ -11,8 +11,11 @@ import {
   DriverWithdrawal, InsertDriverWithdrawal,
   PricingSuggestion, InsertPricingSuggestion,
   TripShare, InsertTripShare,
+  RecentLocation, InsertRecentLocation,
+  FavoriteLocation, InsertFavoriteLocation,
   users, vehicles, trips, bookings, verificationCodes, paymentMethods, 
   driverEarnings, driverWithdrawals, pricingSuggestions, tripShares,
+  recentLocations, favoriteLocations,
 } from "@shared/schema";
 
 // Calculate distance between two points using the Haversine formula
@@ -473,6 +476,106 @@ export class DatabaseStorage implements IStorage {
       .where(eq(tripShares.shareCode, shareCode))
       .returning();
     return tripShare;
+  }
+
+  async deleteSharedTrip(shareCode: string): Promise<boolean> {
+    const result = await db.delete(tripShares).where(eq(tripShares.shareCode, shareCode));
+    return result.rowCount > 0;
+  }
+
+  // Recent Locations Methods
+  async getRecentLocations(userId: number, limit: number = 10): Promise<RecentLocation[]> {
+    return db.select()
+      .from(recentLocations)
+      .where(eq(recentLocations.userId, userId))
+      .orderBy(sql`${recentLocations.lastUsed} DESC, ${recentLocations.usageCount} DESC`)
+      .limit(limit);
+  }
+
+  async addOrUpdateRecentLocation(location: InsertRecentLocation): Promise<RecentLocation> {
+    // Check if location already exists for this user within 100 meters
+    const existing = await db.select()
+      .from(recentLocations)
+      .where(sql`${recentLocations.userId} = ${location.userId} 
+                 AND ABS(${recentLocations.lat} - ${location.lat}) < 0.001 
+                 AND ABS(${recentLocations.lng} - ${location.lng}) < 0.001`);
+
+    if (existing.length > 0) {
+      // Update existing location with new usage
+      const [updated] = await db.update(recentLocations)
+        .set({ 
+          lastUsed: new Date(),
+          usageCount: sql`${recentLocations.usageCount} + 1`,
+          address: location.address, // Update address in case it's more detailed
+          streetAddress: location.streetAddress,
+          city: location.city,
+          state: location.state,
+          zipCode: location.zipCode
+        })
+        .where(eq(recentLocations.id, existing[0].id))
+        .returning();
+      return updated;
+    } else {
+      // Create new recent location
+      const [newLocation] = await db.insert(recentLocations)
+        .values(location)
+        .returning();
+      return newLocation;
+    }
+  }
+
+  // Favorite Locations Methods
+  async getFavoriteLocations(userId: number): Promise<FavoriteLocation[]> {
+    return db.select()
+      .from(favoriteLocations)
+      .where(eq(favoriteLocations.userId, userId))
+      .orderBy(favoriteLocations.createdAt);
+  }
+
+  async addFavoriteLocation(location: InsertFavoriteLocation): Promise<FavoriteLocation> {
+    const [newFavorite] = await db.insert(favoriteLocations)
+      .values(location)
+      .returning();
+    return newFavorite;
+  }
+
+  async updateFavoriteLocation(id: number, updates: Partial<InsertFavoriteLocation>): Promise<FavoriteLocation | undefined> {
+    const [updated] = await db.update(favoriteLocations)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(favoriteLocations.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteFavoriteLocation(id: number, userId: number): Promise<boolean> {
+    const result = await db.delete(favoriteLocations)
+      .where(sql`${favoriteLocations.id} = ${id} AND ${favoriteLocations.userId} = ${userId}`);
+    return result.rowCount > 0;
+  }
+
+  async searchLocations(userId: number, query: string): Promise<{ recent: RecentLocation[], favorites: FavoriteLocation[] }> {
+    const searchPattern = `%${query.toLowerCase()}%`;
+    
+    const [recent, favorites] = await Promise.all([
+      db.select()
+        .from(recentLocations)
+        .where(sql`${recentLocations.userId} = ${userId} 
+                   AND (LOWER(${recentLocations.address}) LIKE ${searchPattern}
+                        OR LOWER(${recentLocations.city}) LIKE ${searchPattern}
+                        OR LOWER(${recentLocations.streetAddress}) LIKE ${searchPattern})`)
+        .orderBy(sql`${recentLocations.lastUsed} DESC`)
+        .limit(5),
+      
+      db.select()
+        .from(favoriteLocations)
+        .where(sql`${favoriteLocations.userId} = ${userId} 
+                   AND (LOWER(${favoriteLocations.name}) LIKE ${searchPattern}
+                        OR LOWER(${favoriteLocations.address}) LIKE ${searchPattern}
+                        OR LOWER(${favoriteLocations.city}) LIKE ${searchPattern})`)
+        .orderBy(favoriteLocations.name)
+    ]);
+
+    return { recent, favorites };
   }
 }
 

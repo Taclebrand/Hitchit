@@ -5,6 +5,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Navigation, Edit3, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import SmartLocationAutocomplete from '@/components/SmartLocationAutocomplete';
+import { useMutation } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 
 interface Address {
   street: string;
