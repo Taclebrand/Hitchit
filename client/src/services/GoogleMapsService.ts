@@ -243,7 +243,7 @@ class GoogleMapsService {
           ...options
         };
 
-        this.autocompleteService!.getPlacePredictions(request, (predictions, status) => {
+        this.autocompleteService!.getPlacePredictions(request, (predictions: google.maps.places.AutocompletePrediction[] | null, status: google.maps.places.PlacesServiceStatus) => {
           if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
             resolve(predictions);
           } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
@@ -275,7 +275,7 @@ class GoogleMapsService {
           fields: ['place_id', 'formatted_address', 'geometry', 'name']
         };
 
-        this.placesService!.getDetails(request, (place, status) => {
+        this.placesService!.getDetails(request, (place: google.maps.places.PlaceResult | null, status: google.maps.places.PlacesServiceStatus) => {
           if (status === google.maps.places.PlacesServiceStatus.OK && place) {
             const location = place.geometry?.location;
             if (location) {
