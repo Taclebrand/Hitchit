@@ -25,7 +25,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
 }
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2023-10-16",
+  apiVersion: "2025-05-28.basil",
 });
 import { eq } from "drizzle-orm";
 import { 
@@ -80,7 +80,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       stripeConnectAccountId: 'acct_test123',
       providerId: null,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      activeVehicleId: null
     };
     return next();
   };
@@ -718,8 +719,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const distance = calculateDistance(
             originLat, 
             originLng, 
-            trip.originLat, 
-            trip.originLng
+            parseFloat(trip.originLat.toString()), 
+            parseFloat(trip.originLng.toString())
           );
           return distance <= maxDist;
         });
@@ -735,8 +736,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const distance = calculateDistance(
             destLat, 
             destLng, 
-            trip.destinationLat, 
-            trip.destinationLng
+            parseFloat(trip.destinationLat.toString()), 
+            parseFloat(trip.destinationLng.toString())
           );
           return distance <= maxDist;
         });
@@ -860,8 +861,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const distance = calculateDistance(
           origin.lat, 
           origin.lng, 
-          trip.originLat, 
-          trip.originLng
+          parseFloat(trip.originLat.toString()), 
+          parseFloat(trip.originLng.toString())
         );
         return distance <= radiusMiles;
       });
@@ -871,8 +872,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const distance = calculateDistance(
           destination.lat, 
           destination.lng, 
-          trip.destinationLat, 
-          trip.destinationLng
+          parseFloat(trip.destinationLat.toString()), 
+          parseFloat(trip.destinationLng.toString())
         );
         return distance <= radiusMiles;
       });

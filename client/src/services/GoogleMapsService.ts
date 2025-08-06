@@ -58,6 +58,7 @@ class GoogleMapsService {
   // Load Google Maps API script
   public async loadGoogleMapsApi(): Promise<void> {
     if (this.isLoaded()) {
+      this.initServices();
       return;
     }
 
@@ -65,11 +66,17 @@ class GoogleMapsService {
       // Check if we already have a Google Maps script in the document
       const existingScript = document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]');
       if (existingScript) {
-        if (window.google && window.google.maps) {
-          this.initServices();
-          resolve();
-          return;
-        }
+        // Wait for the existing script to load
+        const checkLoaded = () => {
+          if (window.google && window.google.maps) {
+            this.initServices();
+            resolve();
+          } else {
+            setTimeout(checkLoaded, 100);
+          }
+        };
+        checkLoaded();
+        return;
       }
       
       const script = document.createElement('script');
