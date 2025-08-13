@@ -121,9 +121,15 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
   const handleVerificationConfirm = () => {
     if (addressToVerify) {
       if (addressToVerify.type === 'pickup') {
-        setPickupAddress(addressToVerify.address);
+        setPickupLocation({
+          address: addressToVerify.address,
+          coordinates: addressToVerify.coordinates
+        });
       } else {
-        setDeliveryAddress(addressToVerify.address);
+        setDeliveryLocation({
+          address: addressToVerify.address,
+          coordinates: addressToVerify.coordinates
+        });
       }
       
       // Close the verification modal

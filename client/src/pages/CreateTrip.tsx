@@ -18,7 +18,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarIcon, Car, MapPin, DollarSign, Users } from "lucide-react";
-import { GoogleMapsService } from "@/services/GoogleMapsService";
+import { googleMapsService } from "@/services/GoogleMapsService";
+import { fallbackLocationService } from "@/services/FallbackLocationService";
 import LocationInput from "@/components/LocationInput";
 
 const createTripSchema = z.object({

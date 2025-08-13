@@ -12,6 +12,8 @@ import { fallbackLocationService } from "@/services/FallbackLocationService";
 import { useToast } from "@/hooks/use-toast";
 import { MapPinIcon, Navigation, Clock, DollarSign, CheckCircle } from "lucide-react";
 import { AddressVerificationModal } from "@/components/AddressVerificationModal";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface RideContentProps {
   onBookRide: () => void;
@@ -176,6 +178,60 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
       title: "Destination Updated",
       description: "Your destination has been set.",
     });
+  };
+
+  // Search for available rides
+  const handleSearchRides = async () => {
+    if (!currentLocation.lat || !currentLocation.lng || !destination.lat || !destination.lng) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter both pickup and destination locations",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Search for available trips/rides
+      const response = await apiRequest('POST', '/api/trips/search/bookings', {
+        origin: {
+          address: currentLocation.address,
+          lat: currentLocation.lat,
+          lng: currentLocation.lng
+        },
+        destination: {
+          address: destination.address,
+          lat: destination.lat,
+          lng: destination.lng
+        },
+        radiusMiles: 15,
+        type: 'ride'
+      });
+
+      const results = await response.json();
+      
+      if (results.hasMatches && results.trips.length > 0) {
+        toast({
+          title: "Rides Found!",
+          description: `Found ${results.trips.length} available rides`,
+        });
+        // Call the original onBookRide callback to handle the results
+        onBookRide();
+      } else {
+        toast({
+          title: "No Rides Available",
+          description: "No matching rides found for your route. Try adjusting your pickup or destination.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error searching for rides:', error);
+      toast({
+        title: "Search Failed",
+        description: "Could not search for rides. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
   
   // Get the user's current location as pickup point
@@ -404,7 +460,7 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
       <div className="p-4 sticky bottom-0">
         <Button 
           className="w-full py-4 bg-primary rounded-full text-white font-medium shadow-lg"
-          onClick={onBookRide}
+          onClick={handleSearchRides}
           disabled={!currentLocation.lat || !destination.lat}
         >
           {!currentLocation.lat || !destination.lat 
