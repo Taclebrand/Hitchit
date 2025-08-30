@@ -78,7 +78,18 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
     }
   ];
 
-  // Handle verification confirmation
+  const handleSelectSavedLocation = (location: any) => {
+    setCurrentLocation({
+      address: location.address,
+      lat: 34.0522, // Default LA coordinates for demo
+      lng: -118.2437
+    });
+    toast({
+      title: "Location Selected",
+      description: `Set pickup location to ${location.name}`,
+    });
+  };
+
   const handleVerificationConfirm = () => {
     if (locationToVerify) {
       if (locationToVerify.type === 'pickup') {
@@ -86,25 +97,19 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
       } else {
         setDestination(locationToVerify.location);
       }
-      
-      // Close the modal
       setShowVerificationModal(false);
+      setLocationToVerify(null);
       
-      // Show success indicator with check mark
       toast({
-        title: "Location Verified ✓",
-        description: "Your location has been confirmed"
+        title: "Location Confirmed",
+        description: "Location has been set successfully",
       });
     }
   };
 
-  const handleSelectSavedLocation = (location: { name: string, address: string }) => {
-    setDestination({
-      address: location.address,
-      lat: undefined,
-      lng: undefined
-    });
-    setShowDestinationPicker(false);
+  const handleVerificationCancel = () => {
+    setShowVerificationModal(false);
+    setLocationToVerify(null);
   };
 
   const handleSelectRideType = (id: string) => {
@@ -116,42 +121,20 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
     const calculateRouteInfo = async () => {
       if (currentLocation.lat && currentLocation.lng && destination.lat && destination.lng) {
         try {
-          // Get route from Google Maps service
-          // Try using Google Maps first, fall back to our backup service if needed
-      let route;
-      try {
-        route = await googleMapsService.getRoute(
-          { lat: currentLocation.lat, lng: currentLocation.lng },
-          { lat: destination.lat, lng: destination.lng }
-        );
-      } catch (error) {
-        console.warn("Google Maps route failed, using fallback service:", error);
-        // Use fallback service
-        route = await fallbackLocationService.getRoute(
-          { lat: currentLocation.lat, lng: currentLocation.lng },
-          { lat: destination.lat, lng: destination.lng }
-        );
-      }
+          // Calculate basic route info
+          const rideTypeMultiplier = selectedRideType === "economy" ? 1 : selectedRideType === "comfort" ? 1.5 : 2;
+          const estimatedDistance = Math.sqrt(
+            Math.pow(destination.lat - currentLocation.lat, 2) + 
+            Math.pow(destination.lng - currentLocation.lng, 2)
+          ) * 69; // Rough miles calculation
           
-      // Calculate fare based on distance and selected ride type
-      const fare = fallbackLocationService.calculateFareEstimate(
-        route.distance.value,
-        selectedRideType
-      );
-          
-          // Update route info state
           setRouteInfo({
-            distance: route.distance.text,
-            duration: route.duration.text,
-            fare: fare
+            distance: `${estimatedDistance.toFixed(1)} mi`,
+            duration: `${Math.ceil(estimatedDistance * 2)} min`,
+            fare: Math.max(7, estimatedDistance * 2.5 * rideTypeMultiplier)
           });
         } catch (error) {
-          console.error("Error calculating route info:", error);
-          toast({
-            title: "Route Calculation Failed",
-            description: "Could not calculate trip information. Please try again.",
-            variant: "destructive"
-          });
+          console.error("Error calculating route:", error);
         }
       } else {
         // Reset route info if locations are not complete
@@ -258,54 +241,80 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
           {
             enableHighAccuracy: true,
             timeout: 15000,
-            maximumAge: 60000
+            maximumAge: 0 // Always get fresh location
           }
         );
       });
         
-        const { latitude, longitude } = position.coords;
-        console.log("Got real location coordinates:", latitude, longitude);
+      const { latitude, longitude } = position.coords;
+      console.log("Got real location coordinates:", latitude, longitude);
+      
+      try {
+        // Use Google Maps Geocoding API to get street address
+        const googleApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+        if (!googleApiKey) {
+          throw new Error('Google Maps API key not found');
+        }
         
+        const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${googleApiKey}`;
+        
+        const response = await fetch(geocodingUrl);
+        const data = await response.json();
+        
+        if (data.status === 'OK' && data.results && data.results.length > 0) {
+          const formattedAddress = data.results[0].formatted_address;
+          console.log("Found street address:", formattedAddress);
+          
+          // Set the location directly
+          setCurrentLocation({
+            address: formattedAddress,
+            lat: latitude,
+            lng: longitude
+          });
+          
+          toast({
+            title: "Location Found",
+            description: "Current location set successfully"
+          });
+        } else {
+          throw new Error('No address found in Google Maps response');
+        }
+      } catch (error) {
+        console.error("Failed to get street address:", error);
+        
+        // Fallback to Mapbox if Google fails
         try {
-          // Direct call to Mapbox Geocoding API to get real street address
-          // We'll use the Mapbox token directly from environment
-          const mapboxToken = 'pk.eyJ1IjoidGFjbGVicmFuZCIsImEiOiJjbWF2bHYyY3IwNjhkMnlwdXA4emFydjllIn0.ve6FSKPekZ-zr7cZzWoIUw';
-          console.log("Using mapbox token for direct geocoding");
+          const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN;
+          if (!mapboxToken) {
+            throw new Error('Mapbox token not found');
+          }
+          
           const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&types=address`;
           
           const response = await fetch(geocodingUrl);
           const data = await response.json();
           
           if (data.features && data.features.length > 0) {
-            // Get the formatted address from the Mapbox API response
             const formattedAddress = data.features[0].place_name;
-            console.log("Found street address:", formattedAddress);
+            console.log("Found street address via Mapbox:", formattedAddress);
             
-            // Create location object
-            const locationObj = {
+            setCurrentLocation({
               address: formattedAddress,
               lat: latitude,
               lng: longitude
-            };
-            
-            // Show verification modal instead of setting directly
-            setLocationToVerify({
-              type: 'pickup',
-              location: locationObj
             });
-            setShowVerificationModal(true);
             
             toast({
-              title: "Address Found",
-              description: "Please verify your location"
+              title: "Location Found",
+              description: "Current location set successfully"
             });
           } else {
-            throw new Error('No address found in API response');
+            throw new Error('No address found in Mapbox response');
           }
-        } catch (error) {
-          console.error("Failed to get street address:", error);
+        } catch (mapboxError) {
+          console.error("Mapbox fallback failed:", mapboxError);
           
-          // If we can't get a street address, just format the coordinates nicely
+          // Final fallback: just use coordinates
           setCurrentLocation({
             address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
             lat: latitude,
@@ -317,7 +326,8 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
             description: "Using your current coordinates"
           });
         }
-      } catch (error: any) {
+      }
+    } catch (error: any) {
       console.error("Geolocation error:", error);
       
       let errorMessage = "Couldn't get your location. Please enter it manually.";
@@ -469,6 +479,14 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
           }
         </Button>
       </div>
+
+      {/* Address Verification Modal */}
+      <AddressVerificationModal
+        isOpen={showVerificationModal}
+        onConfirm={handleVerificationConfirm}
+        address={locationToVerify?.location.address || ""}
+        locationType={locationToVerify?.type || "pickup"}
+      />
     </div>
   );
 };
