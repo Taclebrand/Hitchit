@@ -223,10 +223,28 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
       if (!navigator.geolocation) {
         toast({
           title: "Location not supported",
-          description: "Your browser doesn't support location services",
+          description: "Your browser doesn't support location services. Please enter your address manually.",
           variant: "destructive"
         });
         return;
+      }
+
+      // Check if user has already denied permission
+      try {
+        const permission = await navigator.permissions.query({name: 'geolocation'});
+        if (permission.state === 'denied') {
+          toast({
+            title: "Location access denied",
+            description: "Click the location icon 🌍 in your browser's address bar and select 'Allow', then try again.",
+            variant: "destructive"
+          });
+          return;
+        } else if (permission.state === 'prompt') {
+          // User will be prompted, that's good
+          console.log("Location permission will be requested");
+        }
+      } catch (permError) {
+        console.log("Permission check not supported, proceeding with geolocation request");
       }
 
       toast({
@@ -239,9 +257,9 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
           resolve, 
           reject, 
           {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 0 // Always get fresh location
+            enableHighAccuracy: false, // Use less accurate but faster location
+            timeout: 10000, // Shorter timeout
+            maximumAge: 300000 // Allow cached location up to 5 minutes old
           }
         );
       });
@@ -331,17 +349,21 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
       console.error("Geolocation error:", error);
       
       let errorMessage = "Couldn't get your location. Please enter it manually.";
+      let title = "Location error";
       
       if (error.code === 1) {
-        errorMessage = "Location access denied. Please enable location services and try again.";
+        title = "Location access denied";
+        errorMessage = "To enable location: Look for the location icon 🌍 in your browser's address bar → Click it → Select 'Allow' → Try again";
       } else if (error.code === 2) {
-        errorMessage = "Location unavailable. Please check your connection and try again.";
+        title = "Location unavailable";
+        errorMessage = "Your device's location service is unavailable. Please check your connection or enter your address manually.";
       } else if (error.code === 3) {
-        errorMessage = "Location request timed out. Please try again.";
+        title = "Location timeout";
+        errorMessage = "Location request took too long. Please try again or enter your address manually.";
       }
       
       toast({
-        title: "Location error",
+        title,
         description: errorMessage,
         variant: "destructive"
       });
@@ -369,12 +391,23 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
               type="button" 
               variant="outline" 
               size="sm"
-              className="w-full flex items-center gap-2"
+              className="w-full flex items-center gap-2 hover:bg-primary/10"
               onClick={getCurrentLocation}
             >
               <Navigation className="h-4 w-4" />
               <span>Use My Current Location</span>
             </Button>
+            
+            {currentLocation.address && (
+              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="text-sm text-green-800">
+                    Current: {currentLocation.address}
+                  </span>
+                </div>
+              </div>
+            )}
             
             <div className="flex items-center mt-1">
               <GoogleAutocomplete
@@ -481,12 +514,18 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
       </div>
 
       {/* Address Verification Modal */}
-      <AddressVerificationModal
-        isOpen={showVerificationModal}
-        onConfirm={handleVerificationConfirm}
-        address={locationToVerify?.location.address || ""}
-        locationType={locationToVerify?.type || "pickup"}
-      />
+      {showVerificationModal && locationToVerify && (
+        <AddressVerificationModal
+          isOpen={showVerificationModal}
+          onClose={handleVerificationCancel}
+          onConfirm={handleVerificationConfirm}
+          address={locationToVerify.location.address}
+          coordinates={{
+            lat: locationToVerify.location.lat || 0,
+            lng: locationToVerify.location.lng || 0
+          }}
+        />
+      )}
     </div>
   );
 };
