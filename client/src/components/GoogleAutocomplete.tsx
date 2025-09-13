@@ -65,12 +65,19 @@ export default function GoogleAutocomplete({
 
     const searchPredictions = async () => {
       setIsLoading(true);
+      console.log('GoogleAutocomplete: Starting prediction search for:', inputValue);
       try {
         const results = await googleMapsService.getPlacePredictions(inputValue);
+        console.log('GoogleAutocomplete: Got prediction results:', results.length, 'predictions');
         setPredictions(results);
         setShowPredictions(results.length > 0);
       } catch (error) {
-        console.error('Error getting predictions:', error);
+        console.error('GoogleAutocomplete: Error getting predictions:', error);
+        toast({
+          title: "Location search error",
+          description: "Could not search for locations. Please try again.",
+          variant: "destructive"
+        });
         setPredictions([]);
         setShowPredictions(false);
       } finally {
@@ -80,7 +87,7 @@ export default function GoogleAutocomplete({
 
     const timeoutId = setTimeout(searchPredictions, 300);
     return () => clearTimeout(timeoutId);
-  }, [inputValue, isGoogleMapsLoaded]);
+  }, [inputValue, isGoogleMapsLoaded, toast]);
 
   // Handle prediction selection
   const handlePredictionSelect = async (prediction: google.maps.places.AutocompletePrediction) => {

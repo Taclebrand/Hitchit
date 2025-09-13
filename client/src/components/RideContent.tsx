@@ -7,8 +7,8 @@ import { LocationPicker } from "@/components/LocationPicker";
 import { GoogleLocationPicker } from "@/components/GoogleLocationPicker";
 import { GoogleMapDisplay } from "@/components/GoogleMapDisplay";
 import GoogleAutocomplete from "@/components/GoogleAutocomplete";
-import { googleMapsService } from "@/services/GoogleMapsService";
-import { fallbackLocationService } from "@/services/FallbackLocationService";
+import FreeLocationAutocomplete from "@/components/FreeLocationAutocomplete";
+import { freeLocationService } from "@/services/FreeLocationService";
 import { useToast } from "@/hooks/use-toast";
 import { MapPinIcon, Navigation, Clock, DollarSign, CheckCircle } from "lucide-react";
 import { AddressVerificationModal } from "@/components/AddressVerificationModal";
@@ -217,147 +217,41 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
     }
   };
   
-  // Get the user's current location as pickup point
+  // Handle getting current location using the free location service
   const getCurrentLocation = async () => {
     try {
-      if (!navigator.geolocation) {
-        toast({
-          title: "Location not supported",
-          description: "Your browser doesn't support location services. Please enter your address manually.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Check if user has already denied permission
-      try {
-        const permission = await navigator.permissions.query({name: 'geolocation'});
-        if (permission.state === 'denied') {
-          toast({
-            title: "Location access denied",
-            description: "Click the location icon 🌍 in your browser's address bar and select 'Allow', then try again.",
-            variant: "destructive"
-          });
-          return;
-        } else if (permission.state === 'prompt') {
-          // User will be prompted, that's good
-          console.log("Location permission will be requested");
-        }
-      } catch (permError) {
-        console.log("Permission check not supported, proceeding with geolocation request");
-      }
-
+      console.log("getCurrentLocation called - Using free location service");
+      
       toast({
         title: "Getting location",
         description: "Finding your current location..."
       });
       
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(
-          resolve, 
-          reject, 
-          {
-            enableHighAccuracy: false, // Use less accurate but faster location
-            timeout: 10000, // Shorter timeout
-            maximumAge: 300000 // Allow cached location up to 5 minutes old
-          }
-        );
-      });
-        
-      const { latitude, longitude } = position.coords;
-      console.log("Got real location coordinates:", latitude, longitude);
+      const currentLocationData = await freeLocationService.getCurrentLocation();
       
-      try {
-        // Use Google Maps Geocoding API to get street address
-        const googleApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-        if (!googleApiKey) {
-          throw new Error('Google Maps API key not found');
-        }
-        
-        const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${googleApiKey}`;
-        
-        const response = await fetch(geocodingUrl);
-        const data = await response.json();
-        
-        if (data.status === 'OK' && data.results && data.results.length > 0) {
-          const formattedAddress = data.results[0].formatted_address;
-          console.log("Found street address:", formattedAddress);
-          
-          // Set the location directly
-          setCurrentLocation({
-            address: formattedAddress,
-            lat: latitude,
-            lng: longitude
-          });
-          
-          toast({
-            title: "Location Found",
-            description: "Current location set successfully"
-          });
-        } else {
-          throw new Error('No address found in Google Maps response');
-        }
-      } catch (error) {
-        console.error("Failed to get street address:", error);
-        
-        // Fallback to Mapbox if Google fails
-        try {
-          const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN;
-          if (!mapboxToken) {
-            throw new Error('Mapbox token not found');
-          }
-          
-          const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&types=address`;
-          
-          const response = await fetch(geocodingUrl);
-          const data = await response.json();
-          
-          if (data.features && data.features.length > 0) {
-            const formattedAddress = data.features[0].place_name;
-            console.log("Found street address via Mapbox:", formattedAddress);
-            
-            setCurrentLocation({
-              address: formattedAddress,
-              lat: latitude,
-              lng: longitude
-            });
-            
-            toast({
-              title: "Location Found",
-              description: "Current location set successfully"
-            });
-          } else {
-            throw new Error('No address found in Mapbox response');
-          }
-        } catch (mapboxError) {
-          console.error("Mapbox fallback failed:", mapboxError);
-          
-          // Final fallback: just use coordinates
-          setCurrentLocation({
-            address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
-            lat: latitude,
-            lng: longitude
-          });
-          
-          toast({
-            title: "Location found",
-            description: "Using your current coordinates"
-          });
-        }
-      }
+      setCurrentLocation({
+        address: currentLocationData.address,
+        lat: currentLocationData.coordinates.lat,
+        lng: currentLocationData.coordinates.lng
+      });
+      
+      toast({
+        title: "Location Found",
+        description: "Current location set successfully"
+      });
     } catch (error: any) {
-      console.error("Geolocation error:", error);
+      console.error("Location error:", error);
       
       let errorMessage = "Couldn't get your location. Please enter it manually.";
       let title = "Location error";
       
-      if (error.code === 1) {
+      if (error.message.includes('not supported')) {
+        title = "Location not supported";
+        errorMessage = "Your browser doesn't support location services. Please enter your address manually.";
+      } else if (error.message.includes('denied')) {
         title = "Location access denied";
         errorMessage = "To enable location: Look for the location icon 🌍 in your browser's address bar → Click it → Select 'Allow' → Try again";
-      } else if (error.code === 2) {
-        title = "Location unavailable";
-        errorMessage = "Your device's location service is unavailable. Please check your connection or enter your address manually.";
-      } else if (error.code === 3) {
+      } else if (error.message.includes('timeout')) {
         title = "Location timeout";
         errorMessage = "Location request took too long. Please try again or enter your address manually.";
       }
@@ -410,7 +304,7 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
             )}
             
             <div className="flex items-center mt-1">
-              <GoogleAutocomplete
+              <FreeLocationAutocomplete
                 placeholder="Enter pickup address"
                 onLocationSelect={(location) => {
                   setCurrentLocation({
@@ -421,6 +315,7 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
                 }}
                 initialValue={currentLocation.address}
                 className="w-full"
+                showCurrentLocation={false}
               />
             </div>
           </div>
@@ -431,7 +326,7 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
             <div className="w-3 h-3 bg-secondary rounded-full"></div>
           </div>
           <div className="flex-1">
-            <GoogleAutocomplete
+            <FreeLocationAutocomplete
               placeholder="Where to?"
               onLocationSelect={(location) => {
                 setDestination({
@@ -442,6 +337,7 @@ const RideContent = ({ onBookRide }: RideContentProps) => {
               }}
               initialValue={destination.address}
               className="w-full"
+              showCurrentLocation={false}
             />
           </div>
         </div>

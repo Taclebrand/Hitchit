@@ -14,11 +14,9 @@ import {
 import DeliveryOption from "@/components/DeliveryOption";
 import LocationInput from "@/components/LocationInput";
 import PricingControl from "@/components/PricingControl";
-import GoogleAutocomplete from "@/components/GoogleAutocomplete";
+import FreeLocationAutocomplete from "@/components/FreeLocationAutocomplete";
 import { useToast } from "@/hooks/use-toast";
-import { fallbackLocationService } from "@/services/FallbackLocationService";
-import { mapboxService } from "@/services/MapboxService";
-import { googleMapsService } from "@/services/GoogleMapsService";
+import { freeLocationService } from "@/services/FreeLocationService";
 import { MapPinIcon, CheckCircle, Truck, Clock, Users } from "lucide-react";
 import { AddressVerificationModal } from "@/components/AddressVerificationModal";
 import { useQuery } from "@tanstack/react-query";
@@ -286,7 +284,7 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
           <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mr-3">
             <div className="w-3 h-3 bg-primary rounded-full"></div>
           </div>
-          <GoogleAutocomplete
+          <FreeLocationAutocomplete
             placeholder="Pickup address"
             onLocationSelect={(location) => {
               setPickupLocation({
@@ -296,6 +294,7 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
             }}
             initialValue={pickupLocation.address}
             className="flex-1"
+            showCurrentLocation={false}
           />
         </div>
         
@@ -305,7 +304,7 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
           <div className="w-8 h-8 bg-secondary/20 rounded-full flex items-center justify-center mr-3">
             <div className="w-3 h-3 bg-secondary rounded-full"></div>
           </div>
-          <GoogleAutocomplete
+          <FreeLocationAutocomplete
             placeholder="Delivery address"
             onLocationSelect={(location) => {
               setDeliveryLocation({
@@ -315,6 +314,7 @@ const PackageContent = ({ onSendPackage }: PackageContentProps) => {
             }}
             initialValue={deliveryLocation.address}
             className="flex-1"
+            showCurrentLocation={false}
           />
         </div>
         

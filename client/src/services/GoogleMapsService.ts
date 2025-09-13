@@ -224,16 +224,21 @@ class GoogleMapsService {
   // Get place predictions for autocomplete
   public async getPlacePredictions(input: string, options?: any): Promise<any[]> {
     try {
+      console.log('GoogleMapsService: Loading API and initializing services for input:', input);
       await this.loadGoogleMapsApi();
       this.initServices();
 
       if (!this.autocompleteService) {
+        console.error('GoogleMapsService: AutocompleteService not initialized');
         throw new Error('AutocompleteService not initialized');
       }
 
       if (!input || input.length < 2) {
+        console.log('GoogleMapsService: Input too short, returning empty results');
         return [];
       }
+
+      console.log('GoogleMapsService: Making autocomplete request with input:', input);
 
       return new Promise((resolve, reject) => {
         const request = {
@@ -243,18 +248,25 @@ class GoogleMapsService {
           ...options
         };
 
-        this.autocompleteService!.getPlacePredictions(request, (predictions: google.maps.places.AutocompletePrediction[] | null, status: google.maps.places.PlacesServiceStatus) => {
+        console.log('GoogleMapsService: Request object:', request);
+
+        this.autocompleteService!.getPlacePredictions(request, (predictions, status) => {
+          console.log('GoogleMapsService: Autocomplete callback - Status:', status, 'Predictions:', predictions?.length);
+          
           if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+            console.log('GoogleMapsService: Successfully got', predictions.length, 'predictions');
             resolve(predictions);
           } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+            console.log('GoogleMapsService: Zero results for query');
             resolve([]);
           } else {
+            console.error('GoogleMapsService: Places service failed with status:', status);
             reject(new Error(`Places service failed: ${status}`));
           }
         });
       });
     } catch (error) {
-      console.error('Error getting place predictions:', error);
+      console.error('GoogleMapsService: Error getting place predictions:', error);
       throw error;
     }
   }
