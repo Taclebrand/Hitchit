@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { initMobileDeployment } from "./mobile-deployment";
 import { User } from "@shared/schema";
 
 // Add user to Express Request type
@@ -13,6 +14,10 @@ declare global {
 }
 
 const app = express();
+
+// Initialize mobile deployment configurations first
+initMobileDeployment(app);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
