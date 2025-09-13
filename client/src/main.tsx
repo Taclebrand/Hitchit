@@ -6,14 +6,18 @@ import { queryClient } from "./lib/queryClient";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "./components/ui/toaster";
 import { registerServiceWorker, initializePWAInstallPrompt } from "./utils/pwa";
+import { initMobileOptimizations } from "./utils/mobile-optimizations";
 
-// Initialize PWA features
+// Initialize PWA and mobile features
 if (typeof window !== 'undefined') {
   // Register service worker for offline functionality
   registerServiceWorker();
   
   // Initialize PWA install prompt handling
   initializePWAInstallPrompt();
+  
+  // Initialize mobile-specific optimizations
+  initMobileOptimizations();
 }
 
 createRoot(document.getElementById("root")!).render(
